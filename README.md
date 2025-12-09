@@ -1,43 +1,26 @@
-# Astro Starter Kit: Minimal
+# Anavi Blog (Astro + CMSDocs)
 
-```sh
-npm create astro@latest -- --template minimal
+Minimal Astro build with Tailwind, Vite PWA, and CMSDocs-driven blog routes.
+
+## Quick start
+1) Install deps: `npm install`
+2) Run dev: `npm run dev`
+
+## Environment variables
+Create `.env` with:
+```
+PROJECT_ID=recsI0iT4KmGG0RZ3
+CMSDOCS_WEBHOOK_SECRET=your_webhook_secret
+VERCEL_DEPLOY_HOOK_URL=https://api.vercel.com/v1/integrations/deploy/...
 ```
 
-> 🧑‍🚀 **Seasoned astronaut?** Delete this file. Have fun!
+## Routes
+- `/` landing hero
+- `/posts` listing (uses CMSDocs, with a fallback “hello-world”)
+- `/posts/[slug]` prerendered from CMSDocs; fallback post included
+- `/api/cmsdocs-webhook` verifies CMSDocs signature and triggers Vercel deploy hook
 
-## 🚀 Project Structure
-
-Inside of your Astro project, you'll see the following folders and files:
-
-```text
-/
-├── public/
-├── src/
-│   └── pages/
-│       └── index.astro
-└── package.json
-```
-
-Astro looks for `.astro` or `.md` files in the `src/pages/` directory. Each page is exposed as a route based on its file name.
-
-There's nothing special about `src/components/`, but that's where we like to put any Astro/React/Vue/Svelte/Preact components.
-
-Any static assets, like images, can be placed in the `public/` directory.
-
-## 🧞 Commands
-
-All commands are run from the root of the project, from a terminal:
-
-| Command                   | Action                                           |
-| :------------------------ | :----------------------------------------------- |
-| `npm install`             | Installs dependencies                            |
-| `npm run dev`             | Starts local dev server at `localhost:4321`      |
-| `npm run build`           | Build your production site to `./dist/`          |
-| `npm run preview`         | Preview your build locally, before deploying     |
-| `npm run astro ...`       | Run CLI commands like `astro add`, `astro check` |
-| `npm run astro -- --help` | Get help using the Astro CLI                     |
-
-## 👀 Want to learn more?
-
-Feel free to check [our documentation](https://docs.astro.build) or jump into our [Discord server](https://astro.build/chat).
+## Notes
+- PWA manifest at `public/manifest.webmanifest` (add icons).
+- Tailwind config in `tailwind.config.cjs`; global styles in `src/styles/global.css`.
+- Content fetch helpers in `src/lib/cmsdocs.ts` with a safe offline fallback.

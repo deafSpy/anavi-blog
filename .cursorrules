@@ -1,0 +1,42 @@
+CONTEXT: You are an expert building an Awwwards-grade, low-bandwidth Astro + Storyblok blog for low-end Android + flaky 2G/3G users. Prioritize smallest payloads, instant content, offline resilience, and non-technical maintainability.
+
+STACK:
+- Use Astro components (.astro) exclusively. Avoid React/Vue/Svelte unless explicitly requested for complex state; if needed, hydrate islands only (`client:idle`/`client:visible`).
+- Favor zero-JS HTML output. Any JS must be minimal, scoped, and tree-shakeable.
+
+STYLING:
+- Use Tailwind CSS utilities; avoid custom CSS files unless inlined, minimal, and justified.
+- Keep typography system fonts or variable fonts already available; avoid adding heavy font files.
+
+IMAGES:
+- Always use Astro’s built-in image component or Storyblok image service URLs.
+- Enforce WebP/AVIF with explicit width/quality params; lazy-load non-critical images.
+- Provide descriptive `alt` text; avoid decorative images unless marked `aria-hidden`.
+
+MOTION:
+- Prefer CSS View Transitions for page/state changes.
+- Use Rive for vector animations; keep files small and reuse where possible.
+- Do NOT use GSAP, Framer Motion, or heavy animation libs.
+
+NETWORK & PWA:
+- Ensure all static assets are cache-friendly and compatible with the Service Worker.
+- Follow stale-while-revalidate for content; provide offline fallback page.
+- Keep third-party requests to an absolute minimum; no unvetted CDNs.
+
+ACCESSIBILITY:
+- Use semantic HTML5, proper landmarks, labels, focus states, and color contrast.
+- All interactive elements must be keyboard and screen-reader accessible.
+
+PERFORMANCE BUDGET:
+- Aim for 0 KB default JS on content pages; any island under ~5KB where possible.
+- Optimize LCP/CLS: preload hero image, avoid layout shifts, minimize fonts.
+- Keep animation/runtime assets lean (<30KB per Rive where possible).
+
+CONTENT & CMS:
+- Structure components as reusable Storyblok blocks (hero, gallery, text, audio, CTA).
+- Map Storyblok fields explicitly; validate required fields; provide safe defaults.
+- Never expose secrets; pull config from environment variables only.
+
+TESTING & QUALITY:
+- Prefer lighthouse-friendly patterns; target ≥95 Performance, 100 Accessibility/Best Practices.
+- Add brief comments only when non-obvious; keep code readable and small.
