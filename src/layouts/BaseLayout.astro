@@ -1,7 +1,9 @@
 ---
 import '../styles/global.css';
+import '../styles/hunt.css';
 import { ViewTransitions } from 'astro:transitions';
 import SiteFooter from '../components/SiteFooter.astro';
+import HuntOverlay from '../hunt/HuntOverlay.astro';
 
 interface Props {
   title?: string;
@@ -29,6 +31,7 @@ const { title = 'Anavi Dasgupta', description = 'Purpose-led portfolio and field
       <slot />
     </main>
     <SiteFooter />
+    <HuntOverlay />
   </body>
 </html>
 

@@ -1,0 +1,1084 @@
+---
+/**
+ * HuntOverlay.astro - Main Treasure Hunt Overlay Component
+ * Romantic Theme with Combined Puzzle + Memory Lane Stages
+ * Uses GSAP for animations and Lenis for smooth scroll
+ */
+---
+
+<!-- Hunt Overlay Container -->
+<div id="hunt-overlay" class="hunt-overlay" data-active="false">
+  <!-- Transition Layer -->
+  <div id="transition-layer" class="transition-layer"></div>
+
+  <!-- Main Hunt Container -->
+  <div id="hunt-container" class="hunt-container">
+    <!-- Header with Navigation -->
+    <header class="hunt-header">
+      <button id="nav-prev" class="nav-arrow nav-prev" disabled aria-label="Previous">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M15 18l-6-6 6-6"/>
+        </svg>
+      </button>
+      
+      <div class="hunt-title-area">
+        <span id="hunt-progress-text" class="hunt-progress-text">[1/7]</span>
+        <div class="hunt-progress-bar">
+          <div id="hunt-progress-fill" class="hunt-progress-fill"></div>
+        </div>
+      </div>
+      
+      <button id="nav-next" class="nav-arrow nav-next" disabled aria-label="Next">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M9 18l6-6-6-6"/>
+        </svg>
+      </button>
+    </header>
+
+    <!-- Exit Button -->
+    <button id="hunt-exit" class="hunt-exit">[ESC] EXIT</button>
+
+    <!-- Reset Button (Debug) -->
+    <button id="hunt-reset" class="hunt-reset">[RESET]</button>
+
+    <!-- Stage Container - Content rendered dynamically -->
+    <div id="stage-container" class="stage-container"></div>
+
+    <!-- Success Message Overlay -->
+    <div id="success-overlay" class="success-overlay">
+      <div id="success-message" class="success-message"></div>
+    </div>
+  </div>
+</div>
+
+<style>
+  .hunt-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    background: var(--hunt-bg, #1a1418);
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.4s ease;
+    font-family: 'JetBrains Mono', 'Fira Code', monospace;
+    overflow-y: auto;
+    overflow-x: hidden;
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* IE/Edge */
+  }
+
+  .hunt-overlay::-webkit-scrollbar {
+    display: none; /* Chrome/Safari */
+  }
+
+  .hunt-overlay[data-active="true"] {
+    opacity: 1;
+    visibility: visible;
+  }
+
+  /* Transition Layer (soft fade) */
+  .transition-layer {
+    position: fixed;
+    inset: 0;
+    z-index: 10000;
+    background: var(--hunt-bg, #1a1418);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+  }
+
+  .transition-layer.active {
+    opacity: 1;
+  }
+
+  /* Hunt Container */
+  .hunt-container {
+    position: relative;
+    width: 100%;
+    min-height: 100vh;
+    padding-top: 4rem;
+    padding-bottom: 2rem;
+    overflow: hidden;
+  }
+
+  /* Header with Navigation */
+  .hunt-header {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1.5rem;
+    padding: 0.75rem 1.5rem;
+    background: linear-gradient(to bottom, var(--hunt-bg, #1a1418) 0%, transparent 100%);
+  }
+
+  .hunt-title-area {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.375rem;
+  }
+
+  .hunt-progress-text {
+    font-size: 0.75rem;
+    color: var(--hunt-primary-dim, rgba(212, 165, 217, 0.7));
+  }
+
+  .hunt-progress-bar {
+    width: 6rem;
+    height: 3px;
+    background: var(--hunt-primary-faint, rgba(212, 165, 217, 0.15));
+    border-radius: 2px;
+    overflow: hidden;
+  }
+
+  .hunt-progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--hunt-primary, #d4a5d9), var(--hunt-accent, #e8b4bc));
+    width: 0%;
+    transition: width 0.5s ease;
+  }
+
+  /* Navigation Arrows */
+  .nav-arrow {
+    width: 36px;
+    height: 36px;
+    border: 1px solid var(--hunt-border, rgba(212, 165, 217, 0.25));
+    border-radius: 50%;
+    background: transparent;
+    color: var(--hunt-primary, #d4a5d9);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+  }
+
+  .nav-arrow:hover:not(:disabled) {
+    background: var(--hunt-primary-faint, rgba(212, 165, 217, 0.15));
+    border-color: var(--hunt-primary, #d4a5d9);
+    transform: scale(1.05);
+  }
+
+  .nav-arrow:disabled {
+    opacity: 0.25;
+    cursor: not-allowed;
+  }
+
+  /* Exit & Reset Buttons */
+  .hunt-exit {
+    position: fixed;
+    top: 0.75rem;
+    right: 1rem;
+    z-index: 101;
+    background: none;
+    border: none;
+    color: var(--hunt-primary-dim, rgba(212, 165, 217, 0.5));
+    font-family: inherit;
+    font-size: 0.7rem;
+    cursor: pointer;
+    transition: color 0.3s ease;
+  }
+
+  .hunt-exit:hover {
+    color: var(--hunt-primary, #d4a5d9);
+  }
+
+  .hunt-reset {
+    position: fixed;
+    bottom: 1rem;
+    left: 1rem;
+    z-index: 50;
+    background: none;
+    border: none;
+    color: var(--hunt-danger, rgba(224, 122, 122, 0.3));
+    font-family: inherit;
+    font-size: 0.625rem;
+    cursor: pointer;
+    transition: color 0.3s ease;
+  }
+
+  .hunt-reset:hover {
+    color: var(--hunt-danger, #e07a7a);
+  }
+
+  /* Stage Container */
+  .stage-container {
+    width: 100%;
+    min-height: calc(100vh - 6rem);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 1rem;
+  }
+
+  /* Success Overlay */
+  .success-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 200;
+    background: rgba(26, 20, 24, 0.92);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s ease, visibility 0.3s ease;
+  }
+
+  .success-overlay.active {
+    opacity: 1;
+    visibility: visible;
+  }
+
+  .success-message {
+    color: var(--hunt-accent, #e8b4bc);
+    font-size: 1.25rem;
+    text-align: center;
+    text-shadow: 0 0 30px var(--hunt-glow, rgba(212, 165, 217, 0.4));
+  }
+
+  /* Soft vignette */
+  .hunt-overlay::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    background: radial-gradient(
+      ellipse at center,
+      transparent 0%,
+      transparent 50%,
+      rgba(26, 20, 24, 0.5) 100%
+    );
+    z-index: 50;
+  }
+</style>
+
+<script>
+  import { gsap } from 'gsap';
+  import { huntStages, DEBUG_MODE, KONAMI_SEQUENCE } from './GameConfig.js';
+
+  // ============================================
+  // Hunt Engine State
+  // ============================================
+  const STORAGE_KEY = 'hunt_progress';
+  const SOLVED_KEY = 'hunt_solved';
+  
+  let currentStageIndex = 0;
+  let solvedStages = new Set();
+  let stagePhase = 'puzzle'; // 'puzzle' or 'memory'
+  let isActive = false;
+  let konamiProgress = [];
+  let lenisInstance = null;
+
+  // DOM Elements
+  const overlay = document.getElementById('hunt-overlay');
+  const transitionLayer = document.getElementById('transition-layer');
+  const stageContainer = document.getElementById('stage-container');
+  const progressText = document.getElementById('hunt-progress-text');
+  const progressFill = document.getElementById('hunt-progress-fill');
+  const successOverlay = document.getElementById('success-overlay');
+  const successMessage = document.getElementById('success-message');
+  const exitBtn = document.getElementById('hunt-exit');
+  const resetBtn = document.getElementById('hunt-reset');
+  const navPrev = document.getElementById('nav-prev');
+  const navNext = document.getElementById('nav-next');
+
+  // ============================================
+  // Konami Code Detection
+  // ============================================
+  function initKonamiListener() {
+    document.addEventListener('keydown', (e) => {
+      if (isActive) return;
+
+      const key = e.key.length === 1 ? e.key.toLowerCase() : e.key;
+      konamiProgress.push(key);
+
+      const targetSlice = KONAMI_SEQUENCE.slice(0, konamiProgress.length);
+      const matches = targetSlice.every((k, i) => {
+        const target = k.length === 1 ? k.toLowerCase() : k;
+        return target === konamiProgress[i];
+      });
+
+      if (!matches) {
+        konamiProgress = [];
+        return;
+      }
+
+      if (konamiProgress.length === KONAMI_SEQUENCE.length) {
+        konamiProgress = [];
+        activateHunt();
+      }
+    });
+  }
+
+  // ============================================
+  // Transition Animation
+  // ============================================
+  function playTransition() {
+    return new Promise((resolve) => {
+      if (!transitionLayer) { resolve(); return; }
+      
+      transitionLayer.classList.add('active');
+      
+      setTimeout(() => {
+        transitionLayer.classList.remove('active');
+        resolve();
+      }, 350);
+    });
+  }
+
+  // ============================================
+  // Hunt Activation
+  // ============================================
+  async function activateHunt() {
+    await playTransition();
+    
+    if (overlay) overlay.setAttribute('data-active', 'true');
+    isActive = true;
+    
+    loadProgress();
+    renderCurrentStage();
+    updateProgress();
+    updateNavigation();
+  }
+
+  function deactivateHunt() {
+    if (overlay) overlay.setAttribute('data-active', 'false');
+    isActive = false;
+    if (stageContainer) stageContainer.innerHTML = '';
+    if (lenisInstance) {
+      lenisInstance.destroy();
+      lenisInstance = null;
+    }
+  }
+
+  // ============================================
+  // Progress & Navigation
+  // ============================================
+  function saveProgress() {
+    localStorage.setItem(STORAGE_KEY, currentStageIndex.toString());
+    localStorage.setItem(SOLVED_KEY, JSON.stringify([...solvedStages]));
+  }
+
+  function loadProgress() {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved) {
+      const idx = parseInt(saved, 10);
+      if (!isNaN(idx) && idx < huntStages.length) {
+        currentStageIndex = idx;
+      }
+    }
+    
+    const savedSolved = localStorage.getItem(SOLVED_KEY);
+    if (savedSolved) {
+      try {
+        solvedStages = new Set(JSON.parse(savedSolved));
+      } catch {
+        solvedStages = new Set();
+      }
+    }
+  }
+
+  function updateProgress() {
+    const total = huntStages.length;
+    const current = currentStageIndex + 1;
+    if (progressText) progressText.textContent = `[${current}/${total}]`;
+    if (progressFill) progressFill.style.width = `${(current / total) * 100}%`;
+    saveProgress();
+  }
+
+  function updateNavigation() {
+    if (!navPrev || !navNext) return;
+    
+    // Can go prev if not at start
+    navPrev.disabled = currentStageIndex === 0;
+    
+    // Can go next if current is solved and not at end
+    const currentSolved = solvedStages.has(currentStageIndex);
+    navNext.disabled = !currentSolved || currentStageIndex >= huntStages.length - 1;
+  }
+
+  // Navigation handlers
+  if (navPrev) {
+    navPrev.addEventListener('click', async () => {
+      if (currentStageIndex > 0) {
+        await goToStage(currentStageIndex - 1);
+      }
+    });
+  }
+
+  if (navNext) {
+    navNext.addEventListener('click', async () => {
+      if (currentStageIndex < huntStages.length - 1 && solvedStages.has(currentStageIndex)) {
+        await goToStage(currentStageIndex + 1);
+      }
+    });
+  }
+
+  async function goToStage(index) {
+    await playTransition();
+    currentStageIndex = index;
+    stagePhase = solvedStages.has(index) ? 'memory' : 'puzzle';
+    renderCurrentStage();
+    updateProgress();
+    updateNavigation();
+  }
+
+  // ============================================
+  // Show Success Message
+  // ============================================
+  function showSuccessMessage(message) {
+    return new Promise((resolve) => {
+      if (!successMessage || !successOverlay) { resolve(); return; }
+      
+      successMessage.textContent = message;
+      successOverlay.classList.add('active');
+      
+      gsap.fromTo(successMessage, 
+        { opacity: 0, y: 20 },
+        { opacity: 1, y: 0, duration: 0.4 }
+      );
+
+      setTimeout(() => {
+        gsap.to(successOverlay, {
+          opacity: 0,
+          duration: 0.4,
+          onComplete: () => {
+            successOverlay.classList.remove('active');
+            gsap.set(successOverlay, { opacity: 1 });
+            resolve();
+          }
+        });
+      }, 1800);
+    });
+  }
+
+  // ============================================
+  // Render Current Stage
+  // ============================================
+  function renderCurrentStage() {
+    const stage = huntStages[currentStageIndex];
+    if (!stage || !stageContainer) return;
+
+    stageContainer.innerHTML = '';
+    
+    // Clean up previous Lenis
+    if (lenisInstance) {
+      lenisInstance.destroy();
+      lenisInstance = null;
+    }
+
+    switch (stage.type) {
+      case 'puzzle':
+        renderPuzzleStage(stage);
+        break;
+      case 'glitch_puzzle':
+        renderGlitchPuzzle(stage);
+        break;
+      case 'date_gate':
+        renderDateGate(stage);
+        break;
+      case 'video_reveal':
+        renderVideoReveal(stage);
+        break;
+      default:
+        renderPuzzleStage(stage);
+    }
+  }
+
+  // ============================================
+  // Render Combined Puzzle + Memory Lane Stage
+  // ============================================
+  function renderPuzzleStage(stage) {
+    const isSolved = solvedStages.has(currentStageIndex);
+    const memories = stage.memories || [];
+    
+    // Build puzzle HTML
+    const puzzleHtml = `
+      <div class="puzzle-section ${isSolved ? 'solved' : ''}" id="puzzle-section">
+        <div class="puzzle-card">
+          <div class="terminal-frame">
+            <div class="terminal-header">
+              <div class="terminal-dots">
+                <span class="dot red"></span>
+                <span class="dot yellow"></span>
+                <span class="dot green"></span>
+              </div>
+              <span class="terminal-title">✧ puzzle ${currentStageIndex + 1} ✧</span>
+            </div>
+            <div class="terminal-content">
+              ${isSolved ? `
+                <div class="puzzle-prompt">${stage.prompt}</div>
+                <div class="solved-answer">✓ ${stage.answer}</div>
+              ` : `
+                <div class="puzzle-prompt" id="puzzle-prompt"></div>
+                <div class="puzzle-subtext" id="puzzle-subtext"></div>
+                ${stage.imageClue ? `<div class="puzzle-image"><img src="${stage.imageClue}" alt="Clue" /></div>` : ''}
+                <form class="puzzle-form" id="puzzle-form">
+                  <div class="puzzle-input-wrapper">
+                    <span class="puzzle-cursor">♡</span>
+                    <input 
+                      type="${stage.inputType === 'numeric' ? 'tel' : 'text'}" 
+                      id="puzzle-input" 
+                      class="puzzle-input"
+                      placeholder="${stage.inputPlaceholder || 'your answer...'}"
+                      autocomplete="off"
+                      autocorrect="off"
+                      spellcheck="false"
+                    />
+                    <button type="submit" class="puzzle-submit">Submit</button>
+                  </div>
+                  <div class="puzzle-error" id="puzzle-error"></div>
+                </form>
+                ${stage.hint ? `
+                  <div class="hint-container">
+                    <button type="button" class="hint-toggle" id="hint-toggle">need a hint?</button>
+                    <div class="hint-text" id="hint-text">${stage.hint}</div>
+                  </div>
+                ` : ''}
+              `}
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+
+    // Build memories HTML (hidden initially if not solved)
+    const memoriesHtml = memories.length > 0 ? `
+      <div class="memories-section ${isSolved ? 'visible' : ''}" id="memories-section">
+        ${stage.memoriesMessage ? `<p class="memories-message">${stage.memoriesMessage}</p>` : ''}
+        <div class="memories-container" id="memories-container">
+          ${memories.map((mem, i) => `
+            <div class="memory-card" data-index="${i}">
+              <div class="memory-card-inner">
+                <img class="static-image" src="${typeof mem === 'string' ? mem : mem.image}" alt="Memory ${i + 1}" 
+                     onerror="this.src='https://picsum.photos/400/600?random=${i}'" />
+                ${(typeof mem === 'object' && mem.livePhoto) ? `<img class="live-photo" src="${mem.livePhoto}" alt="" />` : ''}
+                <div class="memory-frame"></div>
+                <span class="memory-index">${String(i + 1).padStart(2, '0')}</span>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+        <button class="continue-btn" id="continue-btn">Next →</button>
+      </div>
+    ` : '';
+
+    stageContainer.innerHTML = puzzleHtml + memoriesHtml;
+
+    if (!isSolved) {
+      initPuzzleInteractions(stage);
+      // Preload memory images
+      preloadMemoryImages(memories);
+    } else {
+      initMemoryInteractions();
+      initContinueButton();
+    }
+  }
+
+  // ============================================
+  // Preload Memory Images
+  // ============================================
+  function preloadMemoryImages(memories) {
+    memories.forEach(mem => {
+      const img = new Image();
+      img.src = typeof mem === 'string' ? mem : mem.image;
+      if (typeof mem === 'object' && mem.livePhoto) {
+        const liveImg = new Image();
+        liveImg.src = mem.livePhoto;
+      }
+    });
+  }
+
+  // ============================================
+  // Puzzle Interactions
+  // ============================================
+  function initPuzzleInteractions(stage) {
+    const promptEl = document.getElementById('puzzle-prompt');
+    const subtextEl = document.getElementById('puzzle-subtext');
+    const form = document.getElementById('puzzle-form');
+    const input = document.getElementById('puzzle-input');
+    const errorEl = document.getElementById('puzzle-error');
+    const hintToggle = document.getElementById('hint-toggle');
+    const hintText = document.getElementById('hint-text');
+    const puzzleSection = document.getElementById('puzzle-section');
+    const memoriesSection = document.getElementById('memories-section');
+
+    // Typewriter effect
+    if (promptEl && stage.prompt) {
+      typewriterEffect(promptEl, stage.prompt, 40, () => {
+        if (subtextEl && stage.subtext) {
+          typewriterEffect(subtextEl, stage.subtext, 25, () => {
+            if (input) input.focus();
+          });
+        } else if (input) {
+          input.focus();
+        }
+      });
+    }
+
+    // Numeric input filter
+    if (stage.inputType === 'numeric' && input) {
+      input.addEventListener('input', (e) => {
+        e.target.value = e.target.value.replace(/[^0-9]/g, '');
+      });
+    }
+
+    // Hint toggle
+    if (hintToggle && hintText) {
+      hintToggle.addEventListener('click', () => {
+        hintText.classList.toggle('visible');
+        hintToggle.textContent = hintText.classList.contains('visible') ? 'hide hint' : 'need a hint?';
+      });
+    }
+
+    // Form submission
+    if (form && input) {
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        const userAnswer = stage.inputType === 'text'
+          ? input.value.toLowerCase().trim()
+          : input.value.trim();
+        const correctAnswer = stage.inputType === 'text'
+          ? stage.answer.toLowerCase().trim()
+          : stage.answer.trim();
+
+        if (userAnswer === correctAnswer) {
+          // Mark as solved
+          solvedStages.add(currentStageIndex);
+          saveProgress();
+          updateNavigation();
+
+          // Show success message
+          await showSuccessMessage(stage.successMessage || 'Correct! ♡');
+
+          // Transition puzzle to solved state
+          if (puzzleSection) {
+            gsap.to(puzzleSection, {
+              scale: 0.92,
+              opacity: 0.7,
+              duration: 0.5
+            });
+            puzzleSection.classList.add('solved');
+          }
+
+          // Reveal memories section
+          if (memoriesSection) {
+            memoriesSection.classList.add('visible');
+            initMemoryInteractions();
+            initContinueButton();
+          }
+
+        } else {
+          // Error shake
+          gsap.to('.puzzle-card', {
+            x: [-8, 8, -8, 8, 0],
+            duration: 0.4,
+            ease: 'power2.inOut'
+          });
+          
+          if (errorEl) {
+            const errorCount = parseInt(errorEl.dataset.count || '0') + 1;
+            errorEl.dataset.count = errorCount.toString();
+            errorEl.textContent = `not quite... try again ♡`;
+            errorEl.style.opacity = '1';
+          }
+          
+          input.value = '';
+          input.focus();
+        }
+      });
+    }
+  }
+
+  // ============================================
+  // Memory Lane Interactions (Lenis + Tilt + Live Photos)
+  // ============================================
+  function initMemoryInteractions() {
+    const memoriesContainer = document.getElementById('memories-container');
+    if (!memoriesContainer) return;
+
+    const cards = memoriesContainer.querySelectorAll('.memory-card');
+    if (cards.length === 0) return;
+
+    // Initialize Lenis for smooth scroll
+    import('lenis').then(({ default: Lenis }) => {
+      lenisInstance = new Lenis({
+        wrapper: overlay,
+        content: document.getElementById('hunt-container'),
+        duration: 1.4,
+        smoothWheel: true,
+        wheelMultiplier: 0.8
+      });
+
+      function raf(time) {
+        if (lenisInstance) {
+          lenisInstance.raf(time);
+          requestAnimationFrame(raf);
+        }
+      }
+      requestAnimationFrame(raf);
+
+      // Parallax on scroll
+      lenisInstance.on('scroll', ({ scroll }) => {
+        cards.forEach((card) => {
+          const speed = parseFloat(card.dataset.speed || '0.3');
+          const rect = card.getBoundingClientRect();
+          const centerY = window.innerHeight / 2;
+          const cardCenterY = rect.top + rect.height / 2;
+          const distance = (cardCenterY - centerY) * speed;
+          
+          gsap.set(card.querySelector('.memory-card-inner'), {
+            y: -distance
+          });
+        });
+      });
+    }).catch(() => {
+      // Fallback if Lenis fails to load
+      console.log('Lenis not available, using native scroll');
+    });
+
+    // Tilt effect and live photo on each card
+    cards.forEach((card, index) => {
+      const inner = card.querySelector('.memory-card-inner');
+      const staticImg = card.querySelector('.static-image');
+      const livePhoto = card.querySelector('.live-photo');
+      
+      // Tilt effect on mouse move
+      card.addEventListener('mousemove', (e) => {
+        const rect = card.getBoundingClientRect();
+        const x = (e.clientX - rect.left) / rect.width - 0.5;
+        const y = (e.clientY - rect.top) / rect.height - 0.5;
+        
+        gsap.to(inner, {
+          rotateX: y * -12,
+          rotateY: x * 12,
+          scale: 1.02,
+          duration: 0.3,
+          ease: 'power2.out'
+        });
+      });
+
+      card.addEventListener('mouseleave', () => {
+        gsap.to(inner, {
+          rotateX: 0,
+          rotateY: 0,
+          scale: 1,
+          duration: 0.5,
+          ease: 'power2.out'
+        });
+
+        // Hide live photo
+        if (livePhoto) {
+          gsap.to(livePhoto, { opacity: 0, duration: 0.3 });
+        }
+        if (staticImg) {
+          gsap.to(staticImg, { opacity: 1, duration: 0.3 });
+        }
+      });
+
+      // Live photo on hover
+      card.addEventListener('mouseenter', () => {
+        if (livePhoto) {
+          gsap.to(livePhoto, { opacity: 1, duration: 0.3 });
+          gsap.to(staticImg, { opacity: 0, duration: 0.3 });
+        }
+      });
+
+      // Animate card in with stagger
+      gsap.fromTo(card,
+        { opacity: 0, y: 50 },
+        { 
+          opacity: 1, 
+          y: 0, 
+          duration: 0.6,
+          delay: 0.1 * index,
+          ease: 'power2.out'
+        }
+      );
+    });
+  }
+
+  // ============================================
+  // Render Glitch Puzzle Stage
+  // ============================================
+  function renderGlitchPuzzle(stage) {
+    const fragments = stage.linkFragments || [
+      'spotify:playlist/37i9dQZ...',
+      'youtu.be/dQw4w9...',
+      'open.spotify.com/...',
+      'https://bit.ly/...'
+    ];
+
+    const html = `
+      <div class="glitch-puzzle" id="glitch-puzzle">
+        <div class="glitch-container">
+          <div class="glitch-error-overlay"></div>
+          
+          <div class="glitch-header">
+            <span class="glitch-status">⚠ ERROR: MEMORY_CORRUPTION_DETECTED</span>
+          </div>
+          
+          <div class="glitch-content">
+            ${fragments.map((frag, i) => `
+              <span class="glitch-fragment" style="animation-delay: ${i * 0.8}s">${frag}</span>
+            `).join('')}
+            
+            <div class="glitch-prompt" data-text="${stage.prompt || 'SYSTEM ERROR'}" id="glitch-prompt">
+              ${stage.prompt || '▓▓▓ CORRUPTED DATA ▓▓▓'}
+            </div>
+            <div class="glitch-subtext" id="glitch-subtext">
+              ${stage.subtext || 'Something is hidden in the noise...'}
+            </div>
+            
+            <form class="glitch-form puzzle-form" id="puzzle-form">
+              <div class="puzzle-input-wrapper">
+                <span class="puzzle-cursor">▓</span>
+                <input 
+                  type="${stage.inputType === 'numeric' ? 'tel' : 'text'}" 
+                  id="puzzle-input" 
+                  class="puzzle-input"
+                  placeholder="${stage.inputPlaceholder || 'decode the signal...'}"
+                  autocomplete="off"
+                  autocorrect="off"
+                  spellcheck="false"
+                />
+                <button type="submit" class="puzzle-submit">Decode</button>
+              </div>
+              <div class="puzzle-error" id="puzzle-error"></div>
+            </form>
+            
+            ${stage.hint ? `
+              <div class="hint-container">
+                <button type="button" class="hint-toggle" id="hint-toggle">need a hint?</button>
+                <div class="hint-text" id="hint-text">${stage.hint}</div>
+              </div>
+            ` : ''}
+          </div>
+        </div>
+      </div>
+    `;
+
+    if (stageContainer) stageContainer.innerHTML = html;
+
+    // Reuse puzzle interactions
+    initPuzzleInteractions(stage);
+
+    // Add random glitch flickers
+    const glitchEl = document.getElementById('glitch-puzzle');
+    if (glitchEl) {
+      setInterval(() => {
+        if (Math.random() > 0.92) {
+          glitchEl.style.transform = `translateX(${(Math.random() - 0.5) * 4}px)`;
+          setTimeout(() => {
+            glitchEl.style.transform = 'translateX(0)';
+          }, 50);
+        }
+      }, 200);
+    }
+  }
+
+  // ============================================
+  // Continue Button
+  // ============================================
+  function initContinueButton() {
+    const btn = document.getElementById('continue-btn');
+    if (!btn) return;
+
+    btn.addEventListener('click', async () => {
+      if (currentStageIndex < huntStages.length - 1) {
+        await goToStage(currentStageIndex + 1);
+      }
+    });
+  }
+
+  // ============================================
+  // Date Gate
+  // ============================================
+  function renderDateGate(stage) {
+    const unlockDate = new Date(stage.unlockDate);
+    const now = new Date();
+    const isUnlocked = now >= unlockDate;
+
+    if (isUnlocked) {
+      solvedStages.add(currentStageIndex);
+      saveProgress();
+      updateNavigation();
+      if (currentStageIndex < huntStages.length - 1) {
+        goToStage(currentStageIndex + 1);
+      }
+      return;
+    }
+
+    const diff = unlockDate.getTime() - now.getTime();
+    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+    const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+    const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+    const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+
+    const html = `
+      <div class="date-gate">
+        <div class="gate-icon">🔒</div>
+        <h2 class="gate-title" id="gate-title"></h2>
+        <p class="gate-message">${stage.lockedMessage}</p>
+        <div class="gate-countdown">
+          <div class="countdown-item">
+            <span class="countdown-value" id="days">${days}</span>
+            <span class="countdown-label">days</span>
+          </div>
+          <div class="countdown-item">
+            <span class="countdown-value" id="hours">${hours}</span>
+            <span class="countdown-label">hours</span>
+          </div>
+          <div class="countdown-item">
+            <span class="countdown-value" id="minutes">${minutes}</span>
+            <span class="countdown-label">min</span>
+          </div>
+          <div class="countdown-item">
+            <span class="countdown-value" id="seconds">${seconds}</span>
+            <span class="countdown-label">sec</span>
+          </div>
+        </div>
+        ${stage.clue ? `
+          <div class="gate-clue">
+            <p class="clue-label">hint</p>
+            <p class="clue-text">${stage.clue}</p>
+          </div>
+        ` : ''}
+      </div>
+    `;
+
+    if (stageContainer) stageContainer.innerHTML = html;
+
+    const titleEl = document.getElementById('gate-title');
+    if (titleEl) typewriterEffect(titleEl, stage.lockedTitle || 'Coming Soon...', 50);
+
+    // Live countdown
+    const interval = setInterval(() => {
+      const now = new Date();
+      const diff = unlockDate.getTime() - now.getTime();
+      
+      if (diff <= 0) {
+        clearInterval(interval);
+        solvedStages.add(currentStageIndex);
+        saveProgress();
+        if (currentStageIndex < huntStages.length - 1) {
+          goToStage(currentStageIndex + 1);
+        }
+        return;
+      }
+
+      const daysEl = document.getElementById('days');
+      const hoursEl = document.getElementById('hours');
+      const minutesEl = document.getElementById('minutes');
+      const secondsEl = document.getElementById('seconds');
+
+      if (daysEl) daysEl.textContent = Math.floor(diff / (1000 * 60 * 60 * 24)).toString();
+      if (hoursEl) hoursEl.textContent = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)).toString();
+      if (minutesEl) minutesEl.textContent = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60)).toString();
+      if (secondsEl) secondsEl.textContent = Math.floor((diff % (1000 * 60)) / 1000).toString();
+    }, 1000);
+  }
+
+  // ============================================
+  // Video Reveal
+  // ============================================
+  function renderVideoReveal(stage) {
+    const html = `
+      <div class="video-reveal">
+        <h2 class="video-title" id="video-title"></h2>
+        <p class="video-subtitle">${stage.subtitle || ''}</p>
+        <div class="video-container">
+          <iframe 
+            src="${stage.videoUrl}"
+            title="Video"
+            frameborder="0"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            allowfullscreen
+          ></iframe>
+        </div>
+        <p class="video-end-message">${stage.endMessage || ''}</p>
+      </div>
+    `;
+
+    if (stageContainer) stageContainer.innerHTML = html;
+
+    const titleEl = document.getElementById('video-title');
+    if (titleEl) typewriterEffect(titleEl, stage.title || 'Final Reveal', 50);
+
+    gsap.from('.video-reveal', { opacity: 0, y: 30, duration: 1, ease: 'power2.out' });
+    gsap.from('.video-container', { opacity: 0, scale: 0.9, duration: 0.8, delay: 0.5, ease: 'power2.out' });
+    gsap.from('.video-end-message', { opacity: 0, y: 20, duration: 0.6, delay: 1.5, ease: 'power2.out' });
+
+    // Mark as complete
+    solvedStages.add(currentStageIndex);
+    saveProgress();
+    updateNavigation();
+  }
+
+  // ============================================
+  // Typewriter Effect
+  // ============================================
+  function typewriterEffect(element, text, speed = 50, callback = null) {
+    if (!element || !text) {
+      if (callback) callback();
+      return;
+    }
+    
+    let index = 0;
+    element.textContent = '';
+    
+    const type = () => {
+      if (index < text.length) {
+        element.textContent += text[index];
+        index++;
+        setTimeout(type, speed);
+      } else if (callback) {
+        callback();
+      }
+    };
+    
+    type();
+  }
+
+  // ============================================
+  // Event Listeners
+  // ============================================
+  if (exitBtn) exitBtn.addEventListener('click', deactivateHunt);
+  
+  if (resetBtn) {
+    resetBtn.addEventListener('click', () => {
+      localStorage.removeItem(STORAGE_KEY);
+      localStorage.removeItem(SOLVED_KEY);
+      currentStageIndex = 0;
+      solvedStages = new Set();
+      stagePhase = 'puzzle';
+      renderCurrentStage();
+      updateProgress();
+      updateNavigation();
+    });
+  }
+
+  // ESC key to exit
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && isActive) {
+      deactivateHunt();
+    }
+  });
+
+  // ============================================
+  // Initialization
+  // ============================================
+  if (DEBUG_MODE) {
+    activateHunt();
+  } else {
+    initKonamiListener();
+  }
+</script>
+
