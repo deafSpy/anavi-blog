@@ -1,24 +1,42 @@
+---
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import { fetchPublishedPosts } from '../../lib/cmsdocs';
+
+export const prerender = true;
 
 const posts = await fetchPublishedPosts();
 ---
 
 <BaseLayout title="Posts" description="Browse all updates and field notes">
-  <section class="mx-auto max-w-4xl px-6 py-16 space-y-10">
-    <header class="space-y-3">
-      <p class="text-sm uppercase tracking-[0.3em] text-slate-400">Journal</p>
-      <h1 class="text-3xl font-semibold text-slate-100 sm:text-4xl">All posts</h1>
-      <p class="text-slate-300">Stories fetched from CMSDocs with a fallback starter post.</p>
+  <!-- Load scroll effects -->
+  <script>
+    import '../../components/ScrollOrchestrator';
+  </script>
+
+  <section class="mx-auto max-w-4xl px-6 py-16 space-y-10 text-slate-900">
+    <header class="space-y-3" data-reveal="up">
+      <p class="text-sm uppercase tracking-[0.3em] text-slate-500">Journal</p>
+      <h1 class="text-3xl font-semibold text-slate-900 sm:text-4xl" data-parallax="0.05">
+        All posts
+      </h1>
+      <p class="text-slate-600">Stories fetched from CMSDocs with a fallback starter post.</p>
     </header>
 
-    <div class="grid gap-6">
+    <div class="grid gap-6" data-stagger>
       {posts.map((post) => (
-        <article class="rounded-2xl border border-slate-800 bg-surface-800/60 p-5 shadow-lg shadow-black/30">
-          <p class="text-xs uppercase tracking-[0.2em] text-slate-400">{post.metadata.category}</p>
-          <h2 class="mt-2 text-xl font-semibold text-slate-100">{post.title}</h2>
-          <p class="mt-2 text-slate-300">{post.description}</p>
-          <a class="mt-4 inline-flex items-center gap-2 text-sm font-medium text-accent-400" href={`/posts/${post.slug}`}>
+        <article
+          class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:border-slate-300"
+          data-stagger-item
+        >
+          <p class="text-xs uppercase tracking-[0.2em] text-slate-500">
+            {post.metadata?.category ?? 'Notes'}
+          </p>
+          <h2 class="mt-2 text-xl font-semibold text-slate-900">{post.title}</h2>
+          <p class="mt-2 text-slate-600">{post.description}</p>
+          <a
+            class="mt-4 inline-flex items-center gap-2 text-sm font-medium text-accent-700"
+            href={`/posts/${post.slug}`}
+          >
             Read →
           </a>
         </article>

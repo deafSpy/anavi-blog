@@ -1,0 +1,58 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import JourneyStrip from '../components/JourneyStrip.astro';
+---
+
+<BaseLayout title="About Anavi" description="Who I am and why I write">
+  <!-- Load scroll effects -->
+  <script>
+    import '../components/ScrollOrchestrator';
+  </script>
+
+  <section class="mx-auto max-w-4xl px-6 py-16 space-y-8">
+    <header class="space-y-3" data-reveal="up">
+      <p class="text-sm uppercase tracking-[0.3em] text-slate-500">About</p>
+      <h1 class="text-4xl font-semibold text-slate-900 sm:text-5xl" data-parallax="0.05">
+        Hi, I'm Anavi.
+      </h1>
+      <p class="text-slate-600">
+        This place will be a collection of random experiences and thoughts
+      </p>
+    </header>
+
+    <div class="grid gap-6 md:grid-cols-2" data-stagger>
+      <div
+        class="rounded-2xl border border-slate-200 bg-slate-50 p-6 shadow-lg shadow-slate-200/50"
+        data-stagger-item
+      >
+        <h2 class="text-xl font-semibold text-slate-900">Now</h2>
+        <p class="mt-2 text-slate-600">
+          Building solar-first, community-owned infrastructure. Testing lightweight tooling for
+          low-connectivity contexts.
+        </p>
+      </div>
+      <div
+        class="rounded-2xl border border-slate-200 bg-slate-50 p-6 shadow-lg shadow-slate-200/50"
+        data-stagger-item
+      >
+        <h2 class="text-xl font-semibold text-slate-900">Before</h2>
+        <p class="mt-2 text-slate-600">
+          lol
+        </p>
+      </div>
+    </div>
+
+    <div
+      class="rounded-2xl border border-slate-200 bg-slate-50 p-6 shadow-lg shadow-slate-200/50"
+      data-reveal="up"
+    >
+      <h2 class="text-xl font-semibold text-slate-900">Why I write</h2>
+      <p class="mt-2 text-slate-600">
+        My boyfriend has memory loss and wants to know about my life for some reason. I'm not sure why.
+      </p>
+    </div>
+
+    <JourneyStrip />
+  </section>
+</BaseLayout>
+

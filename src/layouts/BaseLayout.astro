@@ -1,20 +1,34 @@
+---
 import '../styles/global.css';
+import { ViewTransitions } from 'astro:transitions';
+import SiteFooter from '../components/SiteFooter.astro';
 
-const { title = 'Anavi Blog', description = 'Field notes and project stories.' } =
+interface Props {
+  title?: string;
+  description?: string;
+}
+
+const { title = 'Anavi Dasgupta', description = 'Purpose-led portfolio and field journal.' } =
   Astro.props;
+---
 
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" id="top">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>{title}</title>
     <meta name="description" content={description} />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <meta name="theme-color" content="#f8fafc" />
+    <ViewTransitions />
   </head>
-  <body class="bg-surface-900 text-slate-100 antialiased">
+  <body class="bg-white text-slate-900 antialiased">
     <main class="min-h-screen">
       <slot />
     </main>
+    <SiteFooter />
   </body>
 </html>
 

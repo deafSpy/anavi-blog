@@ -19,8 +19,8 @@ export default defineConfig({
           short_name: 'Anavi',
           start_url: '/',
           display: 'standalone',
-          background_color: '#0f172a',
-          theme_color: '#0f172a',
+          background_color: '#f8fafc',
+          theme_color: '#f8fafc',
           icons: [],
         },
         workbox: {

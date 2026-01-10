@@ -1,0 +1,107 @@
+---
+const year = new Date().getFullYear();
+---
+
+<footer class="paper relative mt-24 overflow-hidden border-t border-black/10">
+  <div class="mx-auto max-w-6xl px-4 py-12 md:px-8">
+    <!-- Oversized background word -->
+    <div class="pointer-events-none absolute inset-x-0 top-[-3.5rem] select-none px-4 md:px-8" aria-hidden="true">
+      <p class="font-serif text-[clamp(4rem,12vw,11rem)] font-black uppercase leading-[0.82] tracking-tight text-black/10">
+        Anavi
+      </p>
+    </div>
+
+    <div class="relative grid gap-10 md:grid-cols-[1fr_1.2fr_0.8fr] md:items-end">
+      <div class="space-y-2">
+        <p class="text-xs uppercase tracking-[0.25em] text-slate-600">Anavi Dasgupta</p>
+        <p class="text-2xl font-semibold text-slate-900">Purpose-led journal</p>
+        <p class="text-sm text-slate-600">New York © 2020–{year}</p>
+      </div>
+
+      <!-- Pill CTAs (Purpose Talent-ish) -->
+      <div class="space-y-3">
+        <a
+          href="mailto:hello@anavi.dev"
+          class="group flex items-center justify-between rounded-full border border-black/10 bg-white/70 px-4 py-3 shadow-sm backdrop-blur transition hover:bg-white"
+        >
+          <span class="inline-flex items-center gap-3">
+            <span class="grid h-10 w-10 place-items-center rounded-full bg-accent-500 text-white shadow-sm">
+              <span class="text-xl leading-none">→</span>
+            </span>
+            <span class="text-sm font-semibold text-slate-900">Email</span>
+          </span>
+          <span class="text-sm text-slate-600">hello@anavi.dev</span>
+        </a>
+
+        <a
+          href="/posts"
+          class="group flex items-center justify-between rounded-full border border-black/10 bg-white/70 px-4 py-3 shadow-sm backdrop-blur transition hover:bg-white"
+        >
+          <span class="inline-flex items-center gap-3">
+            <span class="grid h-10 w-10 place-items-center rounded-full bg-accent-500 text-white shadow-sm">
+              <span class="text-xl leading-none">→</span>
+            </span>
+            <span class="text-sm font-semibold text-slate-900">Read the blog</span>
+          </span>
+          <span class="text-sm text-slate-600">Field notes + experiments</span>
+        </a>
+
+        <!-- CSS-only marquee strip (subtle motion, reduced-motion safe) -->
+        <div class="overflow-hidden rounded-full border border-black/10 bg-white/60">
+          <div class="marquee gap-8 px-6 py-2 text-xs uppercase tracking-[0.35em] text-slate-600">
+            <span>Offline-first</span>
+            <span aria-hidden="true">·</span>
+            <span>Low-bandwidth</span>
+            <span aria-hidden="true">·</span>
+            <span>Accessible</span>
+            <span aria-hidden="true">·</span>
+            <span>Storyblok-ready</span>
+            <span aria-hidden="true">·</span>
+            <span>Offline-first</span>
+            <span aria-hidden="true">·</span>
+            <span>Low-bandwidth</span>
+            <span aria-hidden="true">·</span>
+            <span>Accessible</span>
+            <span aria-hidden="true">·</span>
+            <span>Storyblok-ready</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Back to top -->
+      <div class="md:text-right">
+        <a
+          href="#top"
+          class="inline-flex items-center gap-3 rounded-full border border-black/10 bg-white/70 px-4 py-3 text-sm font-semibold text-slate-900 shadow-sm backdrop-blur transition hover:bg-white"
+        >
+          <span class="grid h-10 w-10 place-items-center rounded-full bg-black/90 text-white">
+            ↑
+          </span>
+          Back to top
+        </a>
+      </div>
+    </div>
+
+    <!-- Minimal doodle arrow -->
+    <svg
+      class="pointer-events-none absolute right-6 top-10 hidden h-16 w-20 text-black/20 md:block"
+      viewBox="0 0 120 90"
+      fill="none"
+      aria-hidden="true"
+    >
+      <path
+        d="M10 70 C 40 20, 80 20, 110 45"
+        stroke="currentColor"
+        stroke-width="6"
+        stroke-linecap="round"
+      />
+      <path
+        d="M100 35 L110 45 L96 52"
+        stroke="currentColor"
+        stroke-width="6"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      />
+    </svg>
+  </div>
+</footer>

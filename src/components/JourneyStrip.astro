@@ -1,0 +1,202 @@
+---
+// JourneyStrip
+// Full-width pinned horizontal scroll (desktop) using existing ScrollOrchestrator hooks.
+// Mobile: native vertical flow (we rely on the existing CSS that flips wrapper column).
+---
+
+<section class="mt-24 w-full space-y-6" aria-labelledby="journey-title">
+  <div class="mx-auto max-w-6xl px-4 flex items-end justify-between gap-6 md:px-8" data-reveal="up">
+    <div class="space-y-2">
+      <p class="text-sm uppercase tracking-[0.3em] text-slate-500">About</p>
+      <h2 id="journey-title" class="text-3xl font-semibold text-slate-900">
+        A living timeline
+      </h2>
+    </div>
+    <p class="hidden max-w-sm text-right text-sm text-slate-500 lg:block">
+      Scroll to move through the journey.
+    </p>
+  </div>
+
+  <!-- Semicircle element - deforms as section scrolls to top -->
+  <div class="relative w-full h-0 lg:h-20 overflow-hidden">
+    <svg
+      data-journey-semicircle
+      viewBox="0 0 100 50"
+      preserveAspectRatio="none"
+      class="absolute top-0 left-0 w-full h-full"
+      aria-hidden="true"
+    >
+      <defs>
+        <linearGradient id="semicircle-gradient" x1="0%" y1="0%" x2="0%" y2="100%">
+          <stop offset="0%" style="stop-color:#0f172a;stop-opacity:0.08" />
+          <stop offset="100%" style="stop-color:#0f172a;stop-opacity:0.02" />
+        </linearGradient>
+      </defs>
+      <!-- Ellipse that will flatten as it reaches top of viewport -->
+      <ellipse cx="50" cy="50" rx="50" ry="50" fill="url(#semicircle-gradient)" />
+    </svg>
+  </div>
+
+  <!-- Full-width pinned / horizontal on desktop via ScrollTrigger -->
+  <div
+    class="paper relative w-full h-full border-t border-b border-black/10 shadow-[0_18px_50px_-30px_rgba(15,23,42,0.45)] lg:h-[100vh] lg:overflow-hidden"
+    data-horizontal-scroll
+  >
+    <!-- Big background word (Purpose Talent-ish) -->
+    <div
+      class="pointer-events-none absolute inset-x-0 top-[-2.5rem] select-none px-6 lg:px-10"
+      aria-hidden="true"
+    >
+      <p
+        class="font-serif text-[clamp(3.5rem,10vw,8.5rem)] font-black uppercase leading-[0.85] tracking-tight text-black/10"
+      >
+        Journey
+      </p>
+    </div>
+
+    <div
+      class="relative flex gap-8 p-6 lg:h-full lg:flex-row lg:items-center lg:gap-12 lg:px-10"
+      data-horizontal-wrapper
+    >
+      <!-- Moment 1 -->
+      <article class="relative flex-shrink-0 lg:w-[78vw]">
+        <div class="grid gap-5 lg:grid-cols-[0.9fr_1.1fr] lg:items-center">
+          <div class="space-y-3">
+            <p class="text-xs uppercase tracking-[0.25em] text-slate-600">Roots</p>
+            <h3 class="text-2xl font-semibold text-slate-900">Learning to document what matters</h3>
+            <p class="text-slate-700">
+              Early field notes: constraints, community, and the discipline of shipping with low
+              bandwidth in mind.
+            </p>
+            <p class="text-sm text-slate-600">
+              <span class="font-medium text-slate-800">Later:</span> swap these placeholders with your
+              images + captions.
+            </p>
+          </div>
+
+          <div class="relative min-h-[28rem] lg:min-h-[80vh]">
+            <div
+              class="absolute left-2 top-2 h-72 w-80 rotate-[-7deg] rounded-2xl border border-black/10 bg-white shadow-lg"
+            >
+              <div
+                class="h-full w-full rounded-2xl bg-[radial-gradient(circle_at_25%_20%,rgba(249,115,22,0.25),transparent_45%),radial-gradient(circle_at_70%_60%,rgba(14,165,233,0.18),transparent_55%)]"
+                aria-hidden="true"
+              ></div>
+              <p class="absolute bottom-3 left-4 text-xs uppercase tracking-[0.2em] text-slate-600">
+                Photo
+              </p>
+            </div>
+
+            <div
+              class="absolute right-1 top-20 h-80 w-56 rotate-[9deg] rounded-2xl border border-black/10 bg-white shadow-lg"
+            >
+              <div
+                class="h-full w-full rounded-2xl bg-[radial-gradient(circle_at_35%_25%,rgba(14,165,233,0.22),transparent_50%),radial-gradient(circle_at_60%_70%,rgba(249,115,22,0.18),transparent_55%)]"
+                aria-hidden="true"
+              ></div>
+              <p class="absolute bottom-3 left-4 text-xs uppercase tracking-[0.2em] text-slate-600">
+                Portrait
+              </p>
+            </div>
+
+            <div class="absolute bottom-12 left-8 max-w-xs rotate-[-2deg] rounded-2xl bg-black/90 px-4 py-3 text-sm text-white shadow-xl">
+              "A small note becomes a map for someone else."
+            </div>
+          </div>
+        </div>
+      </article>
+
+      <!-- Moment 2 -->
+      <article class="relative flex-shrink-0 lg:w-[78vw]">
+        <div class="grid gap-5 lg:grid-cols-[1.1fr_0.9fr] lg:items-center">
+          <div class="relative min-h-[28rem] lg:min-h-[80vh]">
+            <div
+              class="absolute left-0 top-6 h-72 w-96 rotate-[6deg] rounded-3xl border border-black/10 bg-white shadow-lg"
+            >
+              <div
+                class="h-full w-full rounded-3xl bg-[linear-gradient(135deg,rgba(249,115,22,0.18),transparent_55%),radial-gradient(circle_at_70%_20%,rgba(15,23,42,0.10),transparent_45%)]"
+                aria-hidden="true"
+              ></div>
+              <p class="absolute bottom-3 left-4 text-xs uppercase tracking-[0.2em] text-slate-600">
+                Site / System
+              </p>
+            </div>
+
+            <div
+              class="absolute right-6 top-0 h-64 w-60 rotate-[-10deg] rounded-2xl border border-black/10 bg-white shadow-lg"
+            >
+              <div
+                class="h-full w-full rounded-2xl bg-[radial-gradient(circle_at_40%_30%,rgba(14,165,233,0.25),transparent_55%),radial-gradient(circle_at_60%_70%,rgba(249,115,22,0.12),transparent_55%)]"
+                aria-hidden="true"
+              ></div>
+              <p class="absolute bottom-3 left-4 text-xs uppercase tracking-[0.2em] text-slate-600">
+                Field
+              </p>
+            </div>
+
+            <div class="absolute bottom-12 right-0 max-w-xs rotate-[1deg] rounded-2xl border border-black/10 bg-white/85 px-4 py-3 text-sm text-slate-800 shadow-lg">
+              <span class="font-semibold">Milestone:</span> repeatable blocks for stories, galleries, and
+              timelines.
+            </div>
+          </div>
+
+          <div class="space-y-3">
+            <p class="text-xs uppercase tracking-[0.25em] text-slate-600">Systems</p>
+            <h3 class="text-2xl font-semibold text-slate-900">Making structure feel human</h3>
+            <p class="text-slate-700">
+              A site that behaves like a field notebook—alive, tactile, and built for imperfect
+              connections.
+            </p>
+          </div>
+        </div>
+      </article>
+
+      <!-- Moment 3 -->
+      <article class="relative flex-shrink-0 lg:w-[78vw]">
+        <div class="grid gap-5 lg:grid-cols-[0.9fr_1.1fr] lg:items-center">
+          <div class="space-y-3">
+            <p class="text-xs uppercase tracking-[0.25em] text-slate-600">Next</p>
+            <h3 class="text-2xl font-semibold text-slate-900">Depth without heaviness</h3>
+            <p class="text-slate-700">
+              Lightweight motion, composited collages, and story-first visuals—kept accessible and
+              cache-friendly.
+            </p>
+          </div>
+
+          <div class="relative min-h-[28rem] lg:min-h-[80vh]">
+            <div
+              class="absolute left-6 top-2 h-80 w-72 rotate-[-6deg] rounded-3xl border border-black/10 bg-white shadow-lg"
+            >
+              <div
+                class="h-full w-full rounded-3xl bg-[radial-gradient(circle_at_35%_30%,rgba(249,115,22,0.22),transparent_55%),radial-gradient(circle_at_65%_70%,rgba(14,165,233,0.12),transparent_55%)]"
+                aria-hidden="true"
+              ></div>
+              <p class="absolute bottom-3 left-4 text-xs uppercase tracking-[0.2em] text-slate-600">
+                Prototype
+              </p>
+            </div>
+
+            <div
+              class="absolute right-3 top-16 h-80 w-64 rotate-[11deg] rounded-3xl border border-black/10 bg-white shadow-lg"
+            >
+              <div
+                class="h-full w-full rounded-3xl bg-[linear-gradient(155deg,rgba(15,23,42,0.10),transparent_45%),radial-gradient(circle_at_35%_30%,rgba(14,165,233,0.20),transparent_60%)]"
+                aria-hidden="true"
+              ></div>
+              <p class="absolute bottom-3 left-4 text-xs uppercase tracking-[0.2em] text-slate-600">
+                Sketch
+              </p>
+            </div>
+
+            <div class="absolute bottom-12 left-0 max-w-xs rotate-[-1deg] rounded-2xl bg-accent-500/95 px-4 py-3 text-sm text-white shadow-xl">
+              Keep it fast, keep it readable, keep it real.
+            </div>
+          </div>
+        </div>
+      </article>
+
+      <!-- Spacer to give the pin a soft landing -->
+      <div class="hidden flex-shrink-0 lg:block lg:w-24" aria-hidden="true"></div>
+    </div>
+  </div>
+</section>
