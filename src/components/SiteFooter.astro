@@ -2,106 +2,233 @@
 const year = new Date().getFullYear();
 ---
 
-<footer class="paper relative mt-24 overflow-hidden border-t border-black/10">
-  <div class="mx-auto max-w-6xl px-4 py-12 md:px-8">
-    <!-- Oversized background word -->
-    <div class="pointer-events-none absolute inset-x-0 top-[-3.5rem] select-none px-4 md:px-8" aria-hidden="true">
-      <p class="font-serif text-[clamp(4rem,12vw,11rem)] font-black uppercase leading-[0.82] tracking-tight text-black/10">
-        Anavi
-      </p>
-    </div>
+<!-- 
+  Sticky Footer with Clip-Path Reveal Effect
+  Uses clip-path on outer container and sticky positioning inside
+-->
+<div class="footer-wrapper" id="contact">
+  <div class="footer-sticky-container">
+    <footer class="footer-content">
+      <!-- Animated grid background -->
+      <div class="footer-grid" aria-hidden="true"></div>
+      
+      <!-- Floating gradient orbs -->
+      <div class="footer-orb footer-orb-1" aria-hidden="true"></div>
+      <div class="footer-orb footer-orb-2" aria-hidden="true"></div>
+      <div class="footer-orb footer-orb-3" aria-hidden="true"></div>
 
-    <div class="relative grid gap-10 md:grid-cols-[1fr_1.2fr_0.8fr] md:items-end">
-      <div class="space-y-2">
-        <p class="text-xs uppercase tracking-[0.25em] text-slate-600">Anavi Dasgupta</p>
-        <p class="text-2xl font-semibold text-slate-900">Purpose-led journal</p>
-        <p class="text-sm text-slate-600">New York © 2020–{year}</p>
-      </div>
-
-      <!-- Pill CTAs (Purpose Talent-ish) -->
-      <div class="space-y-3">
-        <a
-          href="mailto:hello@anavi.dev"
-          class="group flex items-center justify-between rounded-full border border-black/10 bg-white/70 px-4 py-3 shadow-sm backdrop-blur transition hover:bg-white"
-        >
-          <span class="inline-flex items-center gap-3">
-            <span class="grid h-10 w-10 place-items-center rounded-full bg-accent-500 text-white shadow-sm">
-              <span class="text-xl leading-none">→</span>
-            </span>
-            <span class="text-sm font-semibold text-slate-900">Email</span>
-          </span>
-          <span class="text-sm text-slate-600">hello@anavi.dev</span>
-        </a>
-
-        <a
-          href="/posts"
-          class="group flex items-center justify-between rounded-full border border-black/10 bg-white/70 px-4 py-3 shadow-sm backdrop-blur transition hover:bg-white"
-        >
-          <span class="inline-flex items-center gap-3">
-            <span class="grid h-10 w-10 place-items-center rounded-full bg-accent-500 text-white shadow-sm">
-              <span class="text-xl leading-none">→</span>
-            </span>
-            <span class="text-sm font-semibold text-slate-900">Read the blog</span>
-          </span>
-          <span class="text-sm text-slate-600">Field notes + experiments</span>
-        </a>
-
-        <!-- CSS-only marquee strip (subtle motion, reduced-motion safe) -->
-        <div class="overflow-hidden rounded-full border border-black/10 bg-white/60">
-          <div class="marquee gap-8 px-6 py-2 text-xs uppercase tracking-[0.35em] text-slate-600">
-            <span>Offline-first</span>
-            <span aria-hidden="true">·</span>
-            <span>Low-bandwidth</span>
-            <span aria-hidden="true">·</span>
-            <span>Accessible</span>
-            <span aria-hidden="true">·</span>
-            <span>Storyblok-ready</span>
-            <span aria-hidden="true">·</span>
-            <span>Offline-first</span>
-            <span aria-hidden="true">·</span>
-            <span>Low-bandwidth</span>
-            <span aria-hidden="true">·</span>
-            <span>Accessible</span>
-            <span aria-hidden="true">·</span>
-            <span>Storyblok-ready</span>
-          </div>
+      <div class="relative mx-auto max-w-7xl px-6 py-24 md:px-8 md:py-40">
+        <!-- Large artistic name -->
+        <div class="mb-12">
+          <h2 class="footer-title">Anavi Dasgupta</h2>
         </div>
-      </div>
 
-      <!-- Back to top -->
-      <div class="md:text-right">
-        <a
-          href="#top"
-          class="inline-flex items-center gap-3 rounded-full border border-black/10 bg-white/70 px-4 py-3 text-sm font-semibold text-slate-900 shadow-sm backdrop-blur transition hover:bg-white"
-        >
-          <span class="grid h-10 w-10 place-items-center rounded-full bg-black/90 text-white">
-            ↑
-          </span>
-          Back to top
-        </a>
-      </div>
-    </div>
+        <!-- Tagline -->
+        <p class="text-xl md:text-2xl text-stone-400 max-w-xl mb-16">
+          Purpose-led designer crafting meaningful digital experiences.
+        </p>
 
-    <!-- Minimal doodle arrow -->
-    <svg
-      class="pointer-events-none absolute right-6 top-10 hidden h-16 w-20 text-black/20 md:block"
-      viewBox="0 0 120 90"
-      fill="none"
-      aria-hidden="true"
-    >
-      <path
-        d="M10 70 C 40 20, 80 20, 110 45"
-        stroke="currentColor"
-        stroke-width="6"
-        stroke-linecap="round"
-      />
-      <path
-        d="M100 35 L110 45 L96 52"
-        stroke="currentColor"
-        stroke-width="6"
-        stroke-linecap="round"
-        stroke-linejoin="round"
-      />
-    </svg>
+        <!-- Contact Links -->
+        <div class="footer-links flex flex-wrap gap-4">
+          <a 
+            href="mailto:anavidasguptalis@gmail.com" 
+            class="footer-link"
+          >
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+            </svg>
+            anavidasguptalis@gmail.com
+          </a>
+          
+          <a 
+            href="https://linkedin.com/in/anavi" 
+            target="_blank"
+            rel="noopener noreferrer"
+            class="footer-link"
+          >
+            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/>
+            </svg>
+            LinkedIn
+          </a>
+        </div>
+
+        <!-- Copyright -->
+        <p class="mt-16 text-sm text-stone-600">
+          © {year} Anavi Dasgupta
+        </p>
+      </div>
+    </footer>
   </div>
-</footer>
+</div>
+
+<style>
+  /* ============================================
+     STICKY FOOTER WITH CLIP-PATH REVEAL
+     ============================================ */
+  .footer-wrapper {
+    position: relative;
+    height: 800px;
+    clip-path: polygon(0% 0, 100% 0%, 100% 100%, 0 100%);
+  }
+
+  .footer-sticky-container {
+    position: relative;
+    height: calc(100vh + 800px);
+    top: -100vh;
+  }
+
+  .footer-content {
+    position: sticky;
+    top: calc(100vh - 800px);
+    height: 800px;
+    overflow: hidden;
+    background: linear-gradient(180deg, #1c1917 0%, #0c0a09 100%);
+    color: white;
+  }
+
+  /* ============================================
+     ANIMATED DOT GRID BACKGROUND
+     ============================================ */
+  .footer-grid {
+    position: absolute;
+    inset: 0;
+    background-image: radial-gradient(circle at center, rgba(255,255,255,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    animation: gridPulse 8s ease-in-out infinite;
+  }
+
+  @keyframes gridPulse {
+    0%, 100% { opacity: 0.3; }
+    50% { opacity: 0.6; }
+  }
+
+  /* ============================================
+     FLOATING GRADIENT ORBS
+     ============================================ */
+  .footer-orb {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(80px);
+    pointer-events: none;
+  }
+
+  .footer-orb-1 {
+    width: 400px;
+    height: 400px;
+    background: radial-gradient(circle, rgba(249, 115, 22, 0.15) 0%, transparent 70%);
+    top: -100px;
+    right: -100px;
+    animation: floatOrb1 20s ease-in-out infinite;
+  }
+
+  .footer-orb-2 {
+    width: 300px;
+    height: 300px;
+    background: radial-gradient(circle, rgba(14, 165, 233, 0.1) 0%, transparent 70%);
+    bottom: -50px;
+    left: 10%;
+    animation: floatOrb2 25s ease-in-out infinite;
+  }
+
+  .footer-orb-3 {
+    width: 250px;
+    height: 250px;
+    background: radial-gradient(circle, rgba(168, 162, 158, 0.1) 0%, transparent 70%);
+    top: 40%;
+    left: 50%;
+    animation: floatOrb3 18s ease-in-out infinite;
+  }
+
+  @keyframes floatOrb1 {
+    0%, 100% { transform: translate(0, 0) scale(1); }
+    33% { transform: translate(-30px, 20px) scale(1.1); }
+    66% { transform: translate(20px, -15px) scale(0.95); }
+  }
+
+  @keyframes floatOrb2 {
+    0%, 100% { transform: translate(0, 0) scale(1); }
+    50% { transform: translate(40px, -30px) scale(1.15); }
+  }
+
+  @keyframes floatOrb3 {
+    0%, 100% { transform: translate(0, 0) scale(1); }
+    25% { transform: translate(-20px, 25px) scale(1.05); }
+    75% { transform: translate(25px, -20px) scale(0.9); }
+  }
+
+  /* ============================================
+     TYPOGRAPHY
+     ============================================ */
+  .footer-title {
+    font-size: clamp(3rem, 10vw, 8rem);
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    line-height: 1.1;
+    padding-bottom: 0.1em;
+    color: #ffffff;
+    background: linear-gradient(135deg, #ffffff 0%, #d6d3d1 50%, #ffffff 100%);
+    background-size: 200% 200%;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    animation: shimmer 6s ease-in-out infinite;
+  }
+
+  @supports not (-webkit-background-clip: text) {
+    .footer-title {
+      color: #ffffff;
+      background: none;
+      -webkit-text-fill-color: unset;
+    }
+  }
+
+  @keyframes shimmer {
+    0%, 100% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+  }
+
+  /* ============================================
+     CONTACT LINKS
+     ============================================ */
+  .footer-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.625rem;
+    padding: 0.875rem 1.5rem;
+    background: rgba(255, 255, 255, 0.03);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 9999px;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: #a8a29e;
+    transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .footer-link:hover {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.2);
+    color: white;
+    transform: translateY(-3px);
+    box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.5);
+  }
+
+  /* ============================================
+     MOBILE
+     ============================================ */
+  @media (max-width: 768px) {
+    .footer-wrapper {
+      height: 600px;
+    }
+
+    .footer-sticky-container {
+      height: calc(100vh + 600px);
+    }
+
+    .footer-content {
+      top: calc(100vh - 600px);
+      height: 600px;
+    }
+  }
+</style>

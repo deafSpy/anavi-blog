@@ -4,135 +4,514 @@ import { fetchPublishedPosts } from '../lib/cmsdocs';
 import JourneyStrip from '../components/JourneyStrip.astro';
 
 const posts = await fetchPublishedPosts();
+
+// Subtitle words for staggered animation
+const subtitleWords = "Purpose-led designer crafting meaningful digital experiences.".split(' ');
 ---
 
 <BaseLayout title="Anavi Dasgupta" description="Purpose-led portfolio and field journal">
-  <!-- Loading overlay -->
-  <div id="loading-overlay"></div>
-
-  <!-- Client islands for scroll effects and 3D head -->
-  <script>
-    import '../components/ScrollOrchestrator';
-    import '../components/HeroHead3D';
-  </script>
-
-  <!-- Hero section (contained) -->
-  <section class="mx-auto max-w-6xl px-4 py-8 md:px-8 text-slate-900">
-    <!-- Navbar -->
-    <nav
-      class="sticky top-0 z-20 mb-10 flex items-center justify-between rounded-full border border-slate-200 bg-white/85 px-5 py-3 shadow-sm backdrop-blur-md"
-      data-reveal="down"
-    >
-      <div class="flex items-center gap-3">
-        <span class="text-lg font-semibold tracking-tight text-slate-900">Anavi</span>
-        <span class="hidden text-xs uppercase tracking-[0.35em] text-slate-500 sm:inline">Archive</span>
-      </div>
-      <div class="flex items-center gap-2 text-sm text-slate-700 sm:gap-4">
-        <a class="rounded-full px-3 py-1 transition hover:bg-slate-100" href="/posts">Blog</a>
-        <a class="rounded-full px-3 py-1 transition hover:bg-slate-100" href="/about">About</a>
-        <a class="rounded-full px-3 py-1 transition hover:bg-slate-100" href="#contact">Contact</a>
-      </div>
-    </nav>
-
-    <!-- Hero section -->
-    <div class="grid gap-10 md:grid-cols-[1.1fr_0.9fr] md:items-center">
-      <header class="space-y-4" data-reveal="up">
-        <p class="text-sm uppercase tracking-[0.3em] text-slate-500" data-parallax="-0.1">
-          Purpose-led portfolio
-        </p>
-        <h1 class="text-5xl font-semibold leading-tight text-slate-900 sm:text-6xl" data-parallax="0.05">
-          Anavi Dasgupta
-          <span class="block text-2xl text-accent-600">designs, documents, and delivers</span>
-        </h1>
-        <p class="max-w-xl text-lg text-slate-600" data-parallax="0.08">
-          hi im anavi
-        </p>
-        <div class="flex flex-wrap gap-3 text-sm text-accent-700" data-reveal="left">
-          <span class="rounded-full border border-accent-400/30 bg-accent-50 px-3 py-1">bada</span>
-          <span class="rounded-full border border-accent-400/30 bg-accent-50 px-3 py-1">laltu</span>
-        </div>
-      </header>
-
-      <!-- 3D Head container -->
-      <div
-        class="relative aspect-square overflow-hidden rounded-3xl border border-slate-200 bg-gradient-to-b from-slate-50 via-white to-slate-100 shadow-2xl shadow-slate-200/70"
-        data-reveal="right"
-        data-parallax="-0.15"
-      >
-        <div
-          class="absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(251,146,60,0.25),transparent_40%),radial-gradient(circle_at_80%_30%,rgba(14,165,233,0.15),transparent_35%)]"
-          aria-hidden="true"
-        ></div>
-        <canvas
-          id="anavi-face"
-          class="h-full w-full"
-          aria-label="Interactive 3D sculpture of Anavi"
-        ></canvas>
-      </div>
-    </div>
-  </section>
-
-  <!-- Line break divider (full width) -->
-  <div class="my-16 w-full">
-    <div class="line-break-container">
-      <div class="line-break"></div>
-    </div>
-  </div>
-
-  <!-- Blog roll section (contained) -->
-  <section class="mx-auto max-w-6xl px-4 md:px-8 text-slate-900">
-    <div class="mt-20 grid gap-8 md:grid-cols-[0.8fr_1.2fr] md:items-start">
-      <div class="space-y-3" data-blog-header>
-        <p class="text-sm uppercase tracking-[0.3em] text-slate-500" data-blog-line>Latest</p>
-        <h2 class="text-3xl font-semibold text-slate-900" data-blog-line>Blog roll</h2>
-        <p class="text-slate-600" data-blog-line>heheha</p>
-      </div>
-      <div
-        class="divide-y divide-slate-200 rounded-2xl border border-slate-200 bg-white/90 shadow-sm"
-        data-stagger
-      >
-        {posts.map((post) => (
-          <a
-            class="group relative flex items-start gap-6 px-6 py-5 transition hover:bg-slate-50"
-            href={`/posts/${post.slug}`}
-            data-stagger-item
-          >
-            <div class="flex-1 space-y-2">
-              <div class="flex items-center gap-2 text-xs uppercase tracking-[0.3em] text-slate-500">
-                <span>{post.metadata?.category ?? 'Notes'}</span>
-              </div>
-              <h3 class="text-xl font-semibold text-slate-900 group-hover:text-accent-700">
-                {post.title}
-              </h3>
-              <p class="text-sm text-slate-600 line-clamp-2">{post.description}</p>
-            </div>
-            <div class="text-right text-sm text-slate-500">
-              <p>
-                {new Date(post.publishedAt).toLocaleDateString(undefined, {
-                  month: 'short',
-                  day: 'numeric',
-                })}
-              </p>
-              <p class="mt-1 text-slate-500">→</p>
-            </div>
-            {post.metadata?.image?.url && (
-              <div class="absolute right-6 top-1/2 -translate-y-1/2 opacity-0 transition-opacity group-hover:opacity-100 pointer-events-none z-10">
-                <img
-                  src={post.metadata.image.url}
-                  alt={post.metadata.image.alt}
-                  class="h-16 w-24 rounded-lg border border-slate-200 object-cover shadow-md"
-                  loading="lazy"
-                />
-              </div>
-            )}
-          </a>
+  <!-- Loading overlay - covers entire screen -->
+  <div id="loading-overlay" class="loading-overlay">
+    <div class="loading-content">
+      <div class="loading-logo">
+        {'ANAVI'.split('').map((char, i) => (
+          <span style={`--char-index: ${i}`}>{char}</span>
         ))}
       </div>
+      <div class="loading-bar">
+        <div class="loading-bar-fill"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scripts for physics simulations -->
+  <script>
+    import { initFallingLetters, dropLetters } from '../components/FallingLetters';
+    import { initPhysicsBalls, showBalls } from '../components/PhysicsBalls';
+
+    async function initPage() {
+      const loadingOverlay = document.getElementById('loading-overlay');
+      const subtitleEl = document.getElementById('hero-subtitle');
+      const logoChars = loadingOverlay?.querySelectorAll('.loading-logo span');
+      const loadingBar = loadingOverlay?.querySelector('.loading-bar-fill') as HTMLElement;
+
+      try {
+        // Animate loading logo characters
+        if (logoChars) {
+          logoChars.forEach((char, i) => {
+            setTimeout(() => {
+              (char as HTMLElement).classList.add('revealed');
+            }, 200 + i * 100);
+          });
+        }
+
+        // Animate loading bar
+        if (loadingBar) {
+          loadingBar.style.transform = 'scaleX(1)';
+        }
+
+        // Initialize both physics simulations
+        await Promise.all([
+          initFallingLetters(),
+          initPhysicsBalls('physics-balls-container'),
+        ]);
+
+        // Wait for loading animation
+        await new Promise(r => setTimeout(r, 1500));
+
+        // Fade out loading overlay
+        if (loadingOverlay) {
+          loadingOverlay.classList.add('fade-out');
+        }
+
+        await new Promise(r => setTimeout(r, 600));
+
+        // Hide overlay completely
+        if (loadingOverlay) {
+          loadingOverlay.style.display = 'none';
+        }
+
+        // Drop the letters and show balls
+        dropLetters();
+        showBalls();
+
+        // Show subtitle after letters settle
+        await new Promise(r => setTimeout(r, 1500));
+        if (subtitleEl) {
+          subtitleEl.classList.add('visible');
+        }
+
+      } catch (err) {
+        console.error('[InitPage] Failed:', err);
+        if (loadingOverlay) {
+          loadingOverlay.style.display = 'none';
+        }
+      }
+    }
+
+    // Initialize scroll effects
+    import('../components/ScrollOrchestrator').then(({ init }) => {
+      setTimeout(init, 100);
+    });
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', initPage);
+    } else {
+      initPage();
+    }
+  </script>
+
+  <!-- ============================================
+       NAVBAR - Full Width with Contrast Effect
+       ============================================ -->
+  <nav class="navbar" data-navbar>
+    <div class="navbar-inner">
+      <a href="/" class="navbar-logo">Anavi</a>
+      
+      <div class="navbar-links">
+        <a href="#about" class="navbar-link">About</a>
+        <a href="#blog" class="navbar-link">Blog</a>
+        <a href="#contact" class="navbar-link">Contact</a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- ============================================
+       HERO SECTION - Grid Layout
+       ============================================ -->
+  <section class="hero-section">
+    <!-- Subtitle at top -->
+    <div id="hero-subtitle" class="hero-subtitle">
+      {subtitleWords.map((word, i) => (
+        <span class="subtitle-word-wrapper">
+          <span class="subtitle-word" style={`--splitTextDelay: ${i}`}>{word}</span>
+        </span>
+      ))}
+    </div>
+
+    <!-- Grid container for hero boxes -->
+    <div class="hero-grid">
+      <!-- Left box (3/5) - Falling letters -->
+      <div class="hero-box hero-box-left">
+        <div id="falling-letters-container" class="falling-letters-container"></div>
+      </div>
+
+      <!-- Right column (2/5) - Two stacked boxes -->
+      <div class="hero-right-column">
+        <!-- Top box - Physics balls -->
+        <div class="hero-box hero-box-right-top">
+          <div id="physics-balls-container" class="physics-balls-container"></div>
+        </div>
+
+        <!-- Bottom box - Empty for now -->
+        <div class="hero-box hero-box-right-bottom">
+          <div class="empty-box-content">
+            <!-- Reserved for future content -->
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Scroll Indicator -->
+    <div class="scroll-indicator" data-scroll-indicator>
+      <svg class="scroll-arrow" width="24" height="36" viewBox="0 0 24 36" fill="none">
+        <path class="scroll-arrow-path" d="M12 2 L12 30 M4 22 L12 32 L20 22" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
     </div>
   </section>
 
-  <!-- Full-width horizontal journey section (no max-width) -->
-  <div class="w-full">
+  <!-- ============================================
+       ABOUT SECTION - Journey Strip
+       ============================================ -->
+  <div class="w-full" id="about">
     <JourneyStrip />
   </div>
+
+  <!-- ============================================
+       BLOG ROLL SECTION
+       ============================================ -->
+  <section class="blog-section" id="blog">
+    <div class="mx-auto max-w-6xl px-6 md:px-8">
+      <div class="grid gap-12 lg:grid-cols-[0.4fr_1fr] lg:items-start">
+        <div class="space-y-4 lg:sticky lg:top-32" data-blog-header>
+          <p class="text-sm font-medium uppercase tracking-[0.3em] text-stone-500" data-blog-line>Latest</p>
+          <h2 class="text-4xl font-bold text-stone-900" data-blog-line>Blog roll</h2>
+          <p class="text-stone-600" data-blog-line>Field notes, experiments, and reflections.</p>
+        </div>
+
+        <div class="space-y-4" data-stagger>
+          {posts.map((post) => (
+            <a
+              class="blog-card group flex items-start gap-6 p-6 border border-stone-200/60"
+              href={`/posts/${post.slug}`}
+              data-stagger-item
+            >
+              <div class="flex-1 space-y-2">
+                <div class="flex items-center gap-2 text-xs font-medium uppercase tracking-[0.25em] text-stone-500">
+                  <span>{post.metadata?.category ?? 'Notes'}</span>
+                </div>
+                <h3 class="text-xl font-semibold text-stone-900 group-hover:text-orange-600 transition-colors">
+                  {post.title}
+                </h3>
+                <p class="text-sm text-stone-600 line-clamp-2">{post.description}</p>
+              </div>
+              <div class="text-right text-sm text-stone-500 shrink-0">
+                <p class="font-medium">
+                  {new Date(post.publishedAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                </p>
+                <p class="mt-2 text-orange-500 opacity-0 group-hover:opacity-100 transition-opacity">→</p>
+              </div>
+            </a>
+          ))}
+        </div>
+      </div>
+    </div>
+  </section>
 </BaseLayout>
+
+<style>
+  /* ============================================
+     LOADING OVERLAY
+     ============================================ */
+  .loading-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    background-color: #0c0a09;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: opacity 0.6s ease;
+  }
+
+  .loading-overlay.fade-out {
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .loading-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2rem;
+  }
+
+  .loading-logo {
+    display: flex;
+    font-size: clamp(3rem, 12vw, 8rem);
+    font-weight: 900;
+    color: white;
+    overflow: hidden;
+  }
+
+  .loading-logo span {
+    display: inline-block;
+    transform: translateY(100%) rotateX(-45deg);
+    opacity: 0;
+    transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.6s ease;
+    transition-delay: calc(var(--char-index) * 0.08s);
+  }
+
+  .loading-logo span.revealed {
+    transform: translateY(0) rotateX(0);
+    opacity: 1;
+  }
+
+  .loading-bar {
+    width: 120px;
+    height: 2px;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+
+  .loading-bar-fill {
+    height: 100%;
+    width: 100%;
+    background: white;
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform 1s ease;
+  }
+
+  /* ============================================
+     NAVBAR
+     ============================================ */
+  .navbar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 100;
+    padding: 1.25rem 0;
+    mix-blend-mode: difference;
+  }
+
+  .navbar-inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 2rem;
+  }
+
+  .navbar-logo {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: white;
+    text-decoration: none;
+    letter-spacing: -0.02em;
+  }
+
+  .navbar-links {
+    display: flex;
+    align-items: center;
+    gap: 2.5rem;
+  }
+
+  .navbar-link {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: white;
+    text-decoration: none;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    transition: opacity 0.2s ease;
+  }
+
+  .navbar-link:hover {
+    opacity: 0.6;
+  }
+
+  /* ============================================
+     HERO SECTION - Grid Layout
+     ============================================ */
+  .hero-section {
+    position: relative;
+    min-height: 100vh;
+    background: #faf9f7;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* Subtitle at top */
+  .hero-subtitle {
+    padding: 6rem 2rem 2rem;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    max-width: 500px;
+    margin-left: auto;
+    margin-right: 2rem;
+  }
+
+  .subtitle-word-wrapper {
+    display: inline-block;
+    overflow: hidden;
+    padding-bottom: 0.2em;
+    margin-bottom: -0.2em;
+  }
+
+  .subtitle-word {
+    display: inline-block;
+    font-size: 1rem;
+    font-weight: 400;
+    color: #44403c;
+    transform: translateY(110%);
+    will-change: transform, opacity;
+  }
+
+  .hero-subtitle.visible .subtitle-word {
+    transform: translateY(0);
+    transition: 
+      transform 1.2s cubic-bezier(0.84, 0, 0.16, 1),
+      opacity 1.2s linear;
+    transition-delay: calc(0.05s * var(--splitTextDelay));
+  }
+
+  /* Hero Grid */
+  .hero-grid {
+    flex: 1;
+    display: grid;
+    grid-template-columns: 3fr 2fr;
+    min-height: 0;
+  }
+
+  .hero-right-column {
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* Hero Boxes */
+  .hero-box {
+    position: relative;
+    overflow: hidden;
+    border: 1px solid rgba(0, 0, 0, 0.08);
+  }
+
+  .hero-box-left {
+    border-left: none;
+    border-bottom: none;
+  }
+
+  .hero-box-right-top {
+    flex: 1;
+    border-right: none;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+  }
+
+  .hero-box-right-bottom {
+    flex: 1;
+    border-right: none;
+    border-bottom: none;
+    background: #f5f4f2;
+  }
+
+  .falling-letters-container {
+    position: absolute;
+    inset: 0;
+  }
+
+  .physics-balls-container {
+    position: absolute;
+    inset: 0;
+  }
+
+  .empty-box-content {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* ============================================
+     SCROLL INDICATOR
+     ============================================ */
+  .scroll-indicator {
+    position: absolute;
+    bottom: 2rem;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 5;
+    color: #a8a29e;
+    opacity: 1;
+    transition: opacity 0.5s ease;
+  }
+
+  .scroll-indicator.hidden {
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .scroll-arrow-path {
+    stroke-dasharray: 50;
+    stroke-dashoffset: 50;
+    animation: drawArrow 2s ease-in-out infinite;
+  }
+
+  @keyframes drawArrow {
+    0% { stroke-dashoffset: 50; opacity: 0.3; }
+    50% { stroke-dashoffset: 0; opacity: 1; }
+    100% { stroke-dashoffset: -50; opacity: 0.3; }
+  }
+
+  /* ============================================
+     BLOG SECTION
+     ============================================ */
+  .blog-section {
+    padding: 5rem 0;
+    background: #faf9f7;
+  }
+
+  /* ============================================
+     MOBILE RESPONSIVE
+     ============================================ */
+  @media (max-width: 768px) {
+    .navbar-inner {
+      padding: 0 1rem;
+    }
+
+    .navbar-links {
+      gap: 1.25rem;
+    }
+
+    .navbar-link {
+      font-size: 0.75rem;
+    }
+
+    .hero-subtitle {
+      padding: 5rem 1rem 1rem;
+      margin-right: 1rem;
+      max-width: none;
+    }
+
+    .subtitle-word {
+      font-size: 0.875rem;
+    }
+
+    /* Stack vertically on mobile */
+    .hero-grid {
+      grid-template-columns: 1fr;
+      grid-template-rows: 2fr 1fr;
+    }
+
+    .hero-right-column {
+      flex-direction: row;
+    }
+
+    .hero-box-right-top,
+    .hero-box-right-bottom {
+      flex: 1;
+    }
+  }
+</style>
+
+<script>
+  // Hide scroll indicator on scroll
+  document.addEventListener('scroll', () => {
+    const indicator = document.querySelector('[data-scroll-indicator]');
+    if (indicator && window.scrollY > 100) {
+      indicator.classList.add('hidden');
+    }
+  }, { passive: true });
+</script>

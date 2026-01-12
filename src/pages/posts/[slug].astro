@@ -21,56 +21,250 @@ const { post } = Astro.props as { post: Post };
     import '../../components/ScrollOrchestrator';
   </script>
 
-  <article class="mx-auto max-w-4xl px-6 py-16 space-y-6 text-slate-900">
-    <header class="space-y-3" data-reveal="up">
-      <p class="text-sm uppercase tracking-[0.3em] text-slate-500">
+  <!-- Reading Progress Bar -->
+  <div class="reading-progress-bar" id="reading-progress"></div>
+
+  <!-- ============================================
+       NAVBAR - Same as main page
+       ============================================ -->
+  <nav
+    class="nav-glass fixed top-4 left-1/2 -translate-x-1/2 z-50 flex items-center gap-8 rounded-full px-6 py-3"
+    data-navbar
+  >
+    <a href="/" class="flex items-center gap-2">
+      <span class="text-lg font-bold tracking-tight text-stone-900">Anavi</span>
+    </a>
+    
+    <div class="nav-links flex items-center gap-1">
+      <div class="nav-pill"></div>
+      <a class="nav-link nav-link-active" href="/posts">Blog</a>
+      <a class="nav-link" href="/#about">About</a>
+      <a class="nav-link" href="/#contact">Contact</a>
+    </div>
+  </nav>
+
+  <article class="post-article mx-auto max-w-3xl px-6 pt-28 pb-24 lg:pt-32 lg:pb-32 space-y-8">
+    <!-- Inline Breadcrumb -->
+    <nav class="breadcrumb flex items-center gap-2 text-sm" aria-label="Breadcrumb">
+      <a href="/" class="breadcrumb-link">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+        </svg>
+        <span>Home</span>
+      </a>
+      <svg class="w-4 h-4 text-stone-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+      </svg>
+      <a href="/posts" class="breadcrumb-link">📝 Blog</a>
+      <svg class="w-4 h-4 text-stone-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+      </svg>
+      <span class="breadcrumb-current truncate max-w-xs">{post.title}</span>
+    </nav>
+
+    <header class="space-y-4 post-header">
+      <p class="text-sm uppercase tracking-[0.3em] text-stone-500">
         {post.metadata?.category ?? 'Notes'}
       </p>
-      <h1 class="text-4xl font-semibold text-slate-900 sm:text-5xl" data-parallax="0.03">
+      <h1 class="text-4xl font-bold text-stone-900 sm:text-5xl lg:text-6xl leading-tight">
         {post.title}
       </h1>
-      <p class="text-slate-600">{post.description}</p>
-      <p class="text-xs text-slate-500">
-        {new Date(post.publishedAt).toLocaleDateString(undefined, {
-          month: 'short',
-          day: 'numeric',
-          year: 'numeric',
-        })}
-      </p>
+      <p class="text-lg text-stone-600">{post.description}</p>
+      <div class="flex items-center gap-4 text-sm text-stone-500">
+        <time datetime={post.publishedAt}>
+          {new Date(post.publishedAt).toLocaleDateString(undefined, {
+            month: 'long',
+            day: 'numeric',
+            year: 'numeric',
+          })}
+        </time>
+      </div>
     </header>
 
     {post.metadata?.image?.url && (
       <div
-        class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm"
-        data-reveal="up"
+        class="post-image overflow-hidden rounded-2xl border border-stone-200 bg-white shadow-lg"
       >
         <img
           src={post.metadata.image.url}
           alt={post.metadata.image.alt}
           loading="lazy"
-          class="h-72 w-full object-cover"
+          class="w-full h-auto object-cover"
         />
       </div>
     )}
 
     <div
-      class="prose max-w-none text-slate-800 prose-headings:text-slate-900 prose-a:text-accent-700 prose-strong:text-slate-900 prose-li:marker:text-slate-400"
+      class="post-content prose prose-lg max-w-none prose-stone prose-headings:font-bold prose-headings:text-stone-900 prose-p:text-stone-700 prose-a:text-orange-600 prose-a:no-underline hover:prose-a:underline prose-strong:text-stone-900 prose-code:text-orange-600 prose-code:bg-orange-50 prose-code:px-1 prose-code:py-0.5 prose-code:rounded prose-pre:bg-stone-900 prose-pre:text-stone-100 prose-li:marker:text-stone-400"
       set:html={post.content}
-      data-reveal="up"
     />
 
-    {post.metadata?.author && (
-      <footer class="mt-12 pt-6 text-sm text-slate-600" data-reveal="up">
-        Written by{' '}
-        {post.metadata.author.url ? (
-          <a class="text-accent-700" href={post.metadata.author.url}>
-            {post.metadata.author.name}
-          </a>
-        ) : (
-          post.metadata.author.name
-        )}
+    <!-- {post.metadata?.author && (
+      <footer class="post-footer mt-16 pt-8 border-t border-stone-200">
+        <p class="text-sm text-stone-600">
+          Written by{' '}
+          {post.metadata.author.url ? (
+            <a class="text-orange-600 hover:underline font-medium" href={post.metadata.author.url}>
+              {post.metadata.author.name}
+            </a>
+          ) : (
+            <span class="font-medium text-stone-900">{post.metadata.author.name}</span>
+          )}
+        </p>
       </footer>
-    )}
+    )} -->
   </article>
 </BaseLayout>
 
+<style>
+  /* Reading progress bar */
+  .reading-progress-bar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 0%;
+    height: 3px;
+    background: linear-gradient(90deg, #f97316, #fb923c);
+    z-index: 100;
+    transition: width 0.1s ease-out;
+  }
+
+  /* Post article animations */
+  .post-article {
+    background: linear-gradient(180deg, #fefdfb 0%, #ffffff 100%);
+  }
+
+  .post-header {
+    opacity: 0;
+    transform: translateY(20px);
+    animation: fadeInUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+
+  .post-image {
+    opacity: 0;
+    transform: translateY(20px);
+    animation: fadeInUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.2s forwards;
+  }
+
+  .post-content {
+    opacity: 0;
+    transform: translateY(20px);
+    animation: fadeInUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.3s forwards;
+  }
+
+  .post-footer {
+    opacity: 0;
+    transform: translateY(20px);
+    animation: fadeInUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.4s forwards;
+  }
+
+  @keyframes fadeInUp {
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  /* Navbar active state */
+  .nav-link-active {
+    color: var(--text-primary, #0c0a09);
+  }
+
+  /* Breadcrumb */
+  .breadcrumb {
+    opacity: 0;
+    animation: fadeIn 0.5s ease 0.1s forwards;
+  }
+
+  .breadcrumb-link {
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+    color: #78716c;
+    font-weight: 500;
+    transition: color 0.2s ease;
+  }
+
+  .breadcrumb-link:hover {
+    color: #1c1917;
+  }
+
+  .breadcrumb-current {
+    color: #44403c;
+    font-weight: 500;
+  }
+
+  @keyframes fadeIn {
+    to {
+      opacity: 1;
+    }
+  }
+
+  /* Enhanced prose styles */
+  .post-content :global(h2) {
+    margin-top: 2.5rem;
+    margin-bottom: 1rem;
+  }
+
+  .post-content :global(h3) {
+    margin-top: 2rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .post-content :global(p) {
+    margin-bottom: 1.25rem;
+    line-height: 1.8;
+  }
+
+  .post-content :global(ul),
+  .post-content :global(ol) {
+    margin-bottom: 1.5rem;
+  }
+
+  .post-content :global(blockquote) {
+    border-left: 4px solid #f97316;
+    padding-left: 1.5rem;
+    font-style: italic;
+    color: #57534e;
+  }
+</style>
+
+<script>
+  // Reading progress bar
+  function updateReadingProgress() {
+    const progressBar = document.getElementById('reading-progress');
+    if (!progressBar) return;
+
+    const article = document.querySelector('.post-content');
+    if (!article) return;
+
+    const windowHeight = window.innerHeight;
+    const articleTop = article.getBoundingClientRect().top + window.scrollY;
+    const articleHeight = (article as HTMLElement).offsetHeight;
+    const scrollPosition = window.scrollY;
+
+    // Calculate progress
+    const startReading = articleTop - windowHeight * 0.3;
+    const endReading = articleTop + articleHeight;
+    const totalReadingDistance = endReading - startReading;
+    const currentProgress = scrollPosition - startReading;
+    const progressPercentage = Math.max(0, Math.min(100, (currentProgress / totalReadingDistance) * 100));
+
+    progressBar.style.width = `${progressPercentage}%`;
+  }
+
+  // Initialize on page load
+  function initReadingProgress() {
+    updateReadingProgress();
+    window.addEventListener('scroll', updateReadingProgress, { passive: true });
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initReadingProgress);
+  } else {
+    initReadingProgress();
+  }
+
+  // Re-initialize on Astro page transitions
+  document.addEventListener('astro:page-load', initReadingProgress);
+</script>

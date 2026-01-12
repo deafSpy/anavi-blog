@@ -1,0 +1,422 @@
+---
+/**
+ * Crossword Puzzle Stage Component
+ * Interactive crossword with romantic theme
+ */
+---
+
+<div class="crossword-container" id="crossword-container">
+  <div class="crossword-header">
+    <h2 class="crossword-title">✧ Our Love Crossword ✧</h2>
+    <p class="crossword-subtitle">Fill in the blanks with memories of us</p>
+  </div>
+  
+  <div class="crossword-wrapper">
+    <div class="crossword-grid" id="crossword-grid">
+      <!-- Grid will be dynamically generated -->
+    </div>
+    
+    <div class="crossword-clues">
+      <div class="clues-section">
+        <h3 class="clues-heading">Across</h3>
+        <ul class="clues-list" id="clues-across"></ul>
+      </div>
+      <div class="clues-section">
+        <h3 class="clues-heading">Down</h3>
+        <ul class="clues-list" id="clues-down"></ul>
+      </div>
+    </div>
+  </div>
+  
+  <div class="crossword-actions">
+    <button class="crossword-check" id="crossword-check">Check Answers</button>
+    <button class="crossword-hint" id="crossword-hint">Reveal Letter</button>
+  </div>
+  
+  <div class="crossword-status" id="crossword-status"></div>
+</div>
+
+<style>
+  .crossword-container {
+    width: 100%;
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 2rem 1rem;
+  }
+  
+  .crossword-header {
+    text-align: center;
+    margin-bottom: 2rem;
+  }
+  
+  .crossword-title {
+    font-size: 1.5rem;
+    color: var(--hunt-accent, #e8b4bc);
+    margin-bottom: 0.5rem;
+  }
+  
+  .crossword-subtitle {
+    font-size: 0.9rem;
+    color: var(--hunt-primary-dim, rgba(212, 165, 217, 0.7));
+  }
+  
+  .crossword-wrapper {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+  }
+  
+  @media (min-width: 640px) {
+    .crossword-wrapper {
+      flex-direction: row;
+      gap: 3rem;
+    }
+  }
+  
+  .crossword-grid {
+    display: grid;
+    gap: 2px;
+    background: var(--hunt-border, rgba(212, 165, 217, 0.25));
+    padding: 2px;
+    border-radius: 0.5rem;
+    flex-shrink: 0;
+    margin: 0 auto;
+  }
+  
+  .crossword-cell {
+    width: 2.5rem;
+    height: 2.5rem;
+    position: relative;
+    background: var(--hunt-surface, #231e22);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  .crossword-cell.blocked {
+    background: var(--hunt-bg, #1a1418);
+  }
+  
+  .crossword-cell-input {
+    width: 100%;
+    height: 100%;
+    background: transparent;
+    border: none;
+    outline: none;
+    color: var(--hunt-primary, #d4a5d9);
+    font-family: inherit;
+    font-size: 1.1rem;
+    font-weight: 600;
+    text-align: center;
+    text-transform: uppercase;
+    caret-color: var(--hunt-accent, #e8b4bc);
+  }
+  
+  .crossword-cell-input:focus {
+    background: var(--hunt-primary-faint, rgba(212, 165, 217, 0.15));
+  }
+  
+  .crossword-cell-input.correct {
+    color: #7ece8a;
+  }
+  
+  .crossword-cell-input.incorrect {
+    color: var(--hunt-danger, #e07a7a);
+    animation: shake 0.3s ease;
+  }
+  
+  @keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-3px); }
+    75% { transform: translateX(3px); }
+  }
+  
+  .crossword-cell-number {
+    position: absolute;
+    top: 2px;
+    left: 3px;
+    font-size: 0.55rem;
+    color: var(--hunt-primary-dim, rgba(212, 165, 217, 0.7));
+    font-weight: 500;
+  }
+  
+  .crossword-clues {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+  
+  @media (min-width: 640px) {
+    .crossword-clues {
+      flex-direction: row;
+      gap: 2rem;
+    }
+  }
+  
+  .clues-section {
+    flex: 1;
+  }
+  
+  .clues-heading {
+    font-size: 0.9rem;
+    color: var(--hunt-accent, #e8b4bc);
+    margin-bottom: 0.75rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--hunt-border, rgba(212, 165, 217, 0.25));
+  }
+  
+  .clues-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+  
+  .clues-list li {
+    font-size: 0.8rem;
+    color: var(--hunt-primary-dim, rgba(212, 165, 217, 0.7));
+    padding: 0.4rem 0;
+    cursor: pointer;
+    transition: color 0.2s ease;
+  }
+  
+  .clues-list li:hover {
+    color: var(--hunt-primary, #d4a5d9);
+  }
+  
+  .clues-list li.active {
+    color: var(--hunt-accent, #e8b4bc);
+  }
+  
+  .clue-number {
+    font-weight: 600;
+    color: var(--hunt-accent, #e8b4bc);
+    margin-right: 0.5rem;
+  }
+  
+  .crossword-actions {
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+    margin-top: 2rem;
+  }
+  
+  .crossword-check,
+  .crossword-hint {
+    padding: 0.75rem 1.5rem;
+    background: var(--hunt-primary, #d4a5d9);
+    border: none;
+    border-radius: 2rem;
+    color: var(--hunt-bg, #1a1418);
+    font-family: inherit;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+  }
+  
+  .crossword-check:hover,
+  .crossword-hint:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px var(--hunt-glow, rgba(212, 165, 217, 0.3));
+  }
+  
+  .crossword-hint {
+    background: transparent;
+    border: 1px solid var(--hunt-border, rgba(212, 165, 217, 0.25));
+    color: var(--hunt-primary, #d4a5d9);
+  }
+  
+  .crossword-status {
+    text-align: center;
+    margin-top: 1.5rem;
+    font-size: 0.9rem;
+    color: var(--hunt-accent, #e8b4bc);
+    min-height: 1.5rem;
+  }
+</style>
+
+<script>
+  // Crossword puzzle configuration
+  const crosswordData = {
+    grid: [
+      ['L', 'O', 'V', 'E', '#', 'H', 'E', 'A', 'R', 'T'],
+      ['#', '#', '#', '#', '#', 'O', '#', '#', '#', '#'],
+      ['K', 'I', 'S', 'S', '#', 'M', 'E', 'M', 'O', 'R', 'Y'],
+      ['#', '#', '#', '#', '#', 'E', '#', '#', '#', '#'],
+      ['D', 'A', 'T', 'E', '#', '#', '#', '#', '#', '#'],
+    ],
+    across: [
+      { number: 1, clue: "What we share together ♡", row: 0, col: 0, length: 4 },
+      { number: 5, clue: "Where our feelings live", row: 0, col: 5, length: 5 },
+      { number: 7, clue: "Something sweet we share", row: 2, col: 0, length: 4 },
+      { number: 8, clue: "Precious moments we keep", row: 2, col: 5, length: 6 },
+      { number: 10, clue: "Our special outings", row: 4, col: 0, length: 4 },
+    ],
+    down: [
+      { number: 2, clue: "Our cozy place", row: 0, col: 5, length: 4 },
+    ]
+  };
+
+  function initCrossword() {
+    const gridEl = document.getElementById('crossword-grid');
+    const acrossEl = document.getElementById('clues-across');
+    const downEl = document.getElementById('clues-down');
+    const checkBtn = document.getElementById('crossword-check');
+    const hintBtn = document.getElementById('crossword-hint');
+    const statusEl = document.getElementById('crossword-status');
+    
+    if (!gridEl) return;
+
+    const rows = crosswordData.grid.length;
+    const cols = crosswordData.grid[0].length;
+    
+    // Create clue number map
+    const clueNumbers = {};
+    [...crosswordData.across, ...crosswordData.down].forEach(clue => {
+      const key = `${clue.row}-${clue.col}`;
+      clueNumbers[key] = clue.number;
+    });
+
+    // Build the grid
+    gridEl.style.gridTemplateColumns = `repeat(${cols}, 2.5rem)`;
+    
+    for (let r = 0; r < rows; r++) {
+      for (let c = 0; c < cols; c++) {
+        const cell = document.createElement('div');
+        cell.className = 'crossword-cell';
+        
+        const letter = crosswordData.grid[r][c];
+        
+        if (letter === '#') {
+          cell.classList.add('blocked');
+        } else {
+          const input = document.createElement('input');
+          input.type = 'text';
+          input.maxLength = 1;
+          input.className = 'crossword-cell-input';
+          input.dataset.row = r.toString();
+          input.dataset.col = c.toString();
+          input.dataset.answer = letter;
+          
+          // Handle input navigation
+          input.addEventListener('input', (e) => {
+            const target = e.target;
+            if (target.value.length === 1) {
+              // Move to next cell
+              const nextInput = gridEl.querySelector(
+                `input[data-row="${r}"][data-col="${c + 1}"]`
+              ) || gridEl.querySelector(
+                `input[data-row="${r + 1}"][data-col="0"]`
+              );
+              if (nextInput) nextInput.focus();
+            }
+          });
+          
+          input.addEventListener('keydown', (e) => {
+            if (e.key === 'Backspace' && !e.target.value) {
+              // Move to previous cell
+              const prevInput = gridEl.querySelector(
+                `input[data-row="${r}"][data-col="${c - 1}"]`
+              ) || (r > 0 ? gridEl.querySelector(
+                `input[data-row="${r - 1}"][data-col="${cols - 1}"]`
+              ) : null);
+              if (prevInput) prevInput.focus();
+            }
+          });
+          
+          cell.appendChild(input);
+          
+          // Add clue number if needed
+          const key = `${r}-${c}`;
+          if (clueNumbers[key]) {
+            const num = document.createElement('span');
+            num.className = 'crossword-cell-number';
+            num.textContent = clueNumbers[key].toString();
+            cell.appendChild(num);
+          }
+        }
+        
+        gridEl.appendChild(cell);
+      }
+    }
+    
+    // Build clue lists
+    crosswordData.across.forEach(clue => {
+      const li = document.createElement('li');
+      li.innerHTML = `<span class="clue-number">${clue.number}.</span>${clue.clue}`;
+      li.addEventListener('click', () => {
+        const input = gridEl.querySelector(
+          `input[data-row="${clue.row}"][data-col="${clue.col}"]`
+        );
+        if (input) input.focus();
+      });
+      if (acrossEl) acrossEl.appendChild(li);
+    });
+    
+    crosswordData.down.forEach(clue => {
+      const li = document.createElement('li');
+      li.innerHTML = `<span class="clue-number">${clue.number}.</span>${clue.clue}`;
+      li.addEventListener('click', () => {
+        const input = gridEl.querySelector(
+          `input[data-row="${clue.row}"][data-col="${clue.col}"]`
+        );
+        if (input) input.focus();
+      });
+      if (downEl) downEl.appendChild(li);
+    });
+    
+    // Check answers
+    if (checkBtn) {
+      checkBtn.addEventListener('click', () => {
+        let allCorrect = true;
+        const inputs = gridEl.querySelectorAll('.crossword-cell-input');
+        
+        inputs.forEach(input => {
+          const answer = input.dataset.answer.toUpperCase();
+          const value = input.value.toUpperCase();
+          
+          input.classList.remove('correct', 'incorrect');
+          
+          if (value === answer) {
+            input.classList.add('correct');
+          } else if (value) {
+            input.classList.add('incorrect');
+            allCorrect = false;
+          } else {
+            allCorrect = false;
+          }
+        });
+        
+        if (statusEl) {
+          statusEl.textContent = allCorrect 
+            ? "Perfect! You completed the crossword ♡" 
+            : "Some answers need fixing...";
+        }
+      });
+    }
+    
+    // Reveal hint
+    if (hintBtn) {
+      hintBtn.addEventListener('click', () => {
+        const inputs = Array.from(gridEl.querySelectorAll('.crossword-cell-input'));
+        const emptyInputs = inputs.filter(i => !i.value);
+        
+        if (emptyInputs.length > 0) {
+          const randomInput = emptyInputs[Math.floor(Math.random() * emptyInputs.length)];
+          randomInput.value = randomInput.dataset.answer;
+          randomInput.classList.add('correct');
+          
+          if (statusEl) statusEl.textContent = "Revealed a letter for you!";
+        }
+      });
+    }
+  }
+
+  // Initialize when DOM is ready
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initCrossword);
+  } else {
+    initCrossword();
+  }
+</script>

@@ -24,17 +24,13 @@
 // ============================================
 // DEBUG MODE - Set to true to bypass Konami code
 // ============================================
-export const DEBUG_MODE = true;
+export const DEBUG_MODE = false;
 
 // ============================================
 // CUSTOM KONAMI CODE
 // ============================================
 export const KONAMI_SEQUENCE = [
-  'ArrowUp', 'ArrowUp', 
-  'ArrowDown', 'ArrowDown', 
-  'ArrowLeft', 'ArrowRight', 
-  'ArrowLeft', 'ArrowRight', 
-  'b', 'a'
+  'h', 'i'
 ];
 
 // ============================================
@@ -57,6 +53,8 @@ export const huntStages = [
       { image: '/anniversary/memories/phase1/pic1.jpg' },
       { image: '/anniversary/memories/phase1/pic2.jpg' },
       { image: '/anniversary/memories/phase1/pic3.jpg' },
+      { image: '/anniversary/memories/phase1/pic4.jpg' },
+      { image: '/anniversary/memories/phase1/pic5.jpg' },
     ],
     successMessage: "You remembered ♡"
   },
@@ -151,10 +149,37 @@ export const huntStages = [
   },
 
   // ──────────────────────────────────────────
-  // STAGE 6: Date Gate (Anniversary Lock)
+  // STAGE 6: Crossword Puzzle
   // ──────────────────────────────────────────
   {
     id: 6,
+    type: 'crossword',
+    title: "✧ Our Love Crossword ✧",
+    subtitle: "Fill in the blanks with memories of us",
+    grid: [
+      ['L', 'O', 'V', 'E', '#', 'H', 'E', 'A', 'R', 'T'],
+      ['#', '#', '#', '#', '#', 'O', '#', '#', '#', '#'],
+      ['K', 'I', 'S', 'S', '#', 'M', 'E', 'M', 'O', 'R', 'Y'],
+      ['#', '#', '#', '#', '#', 'E', '#', '#', '#', '#'],
+      ['D', 'A', 'T', 'E', '#', '#', '#', '#', '#', '#'],
+    ],
+    acrossClues: [
+      { num: 1, clue: "What we share together ♡" },
+      { num: 2, clue: "Where our feelings live" },
+      { num: 3, clue: "Something sweet we share" },
+      { num: 4, clue: "Precious moments we keep" },
+      { num: 5, clue: "Our special outings" },
+    ],
+    downClues: [
+      { num: 2, clue: "Our cozy place together" },
+    ],
+  },
+
+  // ──────────────────────────────────────────
+  // STAGE 7: Date Gate (Anniversary Lock)
+  // ──────────────────────────────────────────
+  {
+    id: 7,
     type: 'date_gate',
     unlockDate: '2026-01-28',
     lockedTitle: "✧ A Special Surprise Awaits ✧",
@@ -164,10 +189,10 @@ export const huntStages = [
   },
 
   // ──────────────────────────────────────────
-  // STAGE 7: Final Video Reveal
+  // STAGE 8: Final Video Reveal
   // ──────────────────────────────────────────
   {
-    id: 7,
+    id: 8,
     type: 'video_reveal',
     title: "✧ For You, With Love ✧",
     subtitle: "A message from my heart to yours...",

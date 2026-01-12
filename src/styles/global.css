@@ -2,13 +2,37 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ============================================
+   DESIGN TOKENS
+   ============================================ */
 :root {
   color-scheme: light;
-  background: #f8fafc;
-  color: #0f172a;
+/* Colors */
+    --bg-primary: #fafaf9;
+    --bg-secondary: #f5f5f4;
+    --text-primary: #0c0a09;
+    --text-secondary: #44403c;
+    --text-muted: #78716c;
+    --accent: #f97316;
+    --accent-soft: rgba(249, 115, 22, 0.12);
+
+    /* Glassmorphism */
+    --glass-bg: rgba(255, 255, 255, 0.72);
+    --glass-border: rgba(0, 0, 0, 0.06);
+    --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+
+    /* Animation */
+    --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+    --ease-out-quint: cubic-bezier(0.22, 1, 0.36, 1);
+    --ease-in-out-circ: cubic-bezier(0.85, 0, 0.15, 1);
+
+    /* Perspective for 3D */
+    --perspective: 1200px;
 }
 
-/* Lenis smooth scroll */
+/* ============================================
+   BASE STYLES
+   ============================================ */
 html.lenis,
 html.lenis body {
   height: auto;
@@ -31,11 +55,11 @@ html.lenis body {
 }
 
 body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue',
-    sans-serif;
-  background: #f8fafc;
-  color: #0f172a;
+font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: var(--bg-primary);
+    color: var(--text-primary);
   min-height: 100vh;
+overflow-x: hidden;
 }
 
 a {
@@ -44,117 +68,302 @@ a {
 }
 
 .prose {
-  @apply text-slate-800 leading-relaxed;
+@apply text-stone-800 leading-relaxed;
 }
 
-/* Reduced motion: disable animations */
-@media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
-    scroll-behavior: auto !important;
-  }
-}
-
-/* Pin container for horizontal scroll */
-[data-horizontal-scroll] {
-  will-change: transform;
-}
-
-/* Ensure horizontal wrapper doesn't clip on mobile */
-@media (max-width: 1023px) {
-  [data-horizontal-scroll] {
-    overflow-x: auto;
-    overflow-y: hidden;
-    -webkit-overflow-scrolling: touch;
-  }
-
-  [data-horizontal-wrapper] {
-    flex-direction: column !important;
-  }
-}
-
-/* Loading overlay - shown on page load, then animated away */
+/* ============================================
+   LOADING OVERLAY - Logo Reveal Gimmick
+   ============================================ */
 #loading-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: #f8fafc;
-  z-index: 9999;
-  pointer-events: auto;
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    background: var(--text-primary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: auto;
 }
 
-/* Line break animation */
-.line-break-container {
-  position: relative;
-  height: 1px;
-  overflow: hidden;
+.loading-logo {
+    font-size: clamp(3rem, 12vw, 8rem);
+    font-weight: 800;
+    letter-spacing: -0.04em;
+    color: var(--bg-primary);
+    overflow: hidden;
 }
 
-.line-break {
-  position: absolute;
-  width: 100%;
-  height: 1px;
-  background: linear-gradient(
-    to right,
-    transparent,
-    #0f172a 20%,
-    #0f172a 80%,
-    transparent
-  );
+.loading-logo span {
+    display: inline-block;
+    transform: translateY(100%) rotateX(-90deg);
+    transform-origin: center top;
+    opacity: 0;
 }
 
-/* Mask text reveal */
-.mask-text {
-  position: relative;
-  overflow: hidden;
+/* ============================================
+   NAVBAR - Glassmorphism with Pill Highlight
+   ============================================ */
+.nav-glass {
+    background: var(--glass-bg);
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    border: 1px solid var(--glass-border);
+    box-shadow: var(--glass-shadow);
 }
 
-.mask-text-inner {
-  position: relative;
+.nav-links {
+    position: relative;
 }
 
-/* Stagger animation for blog items on scroll */
-@media (prefers-reduced-motion: no-preference) {
-  [data-stagger-item] {
+.nav-pill {
+    position: absolute;
+    background: var(--accent-soft);
+    border-radius: 9999px;
+    pointer-events: none;
+    opacity: 0;
+    transition: all 0.3s var(--ease-out-expo);
+}
+
+.nav-links:hover .nav-pill {
     opacity: 1;
-  }
 }
 
-/* Paper-ish background + subtle grain (CSS-only, low bandwidth) */
+.nav-link {
+    position: relative;
+    z-index: 1;
+    padding: 0.5rem 1rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+    transition: color 0.3s ease;
+}
+
+.nav-link:hover {
+    color: var(--text-primary);
+}
+
+/* ============================================
+   3D FLIP-IN TEXT REVEAL
+   ============================================ */
+[data-flip-reveal] {
+    perspective: var(--perspective);
+}
+
+.flip-word {
+    display: inline-block;
+    transform-style: preserve-3d;
+    transform: rotateX(-90deg);
+    transform-origin: center bottom;
+    opacity: 0;
+}
+
+.flip-word.revealed {
+    transform: rotateX(0deg);
+    opacity: 1;
+}
+
+.flip-char {
+    display: inline-block;
+    transform-style: preserve-3d;
+    transform: rotateX(-90deg) translateY(20px);
+    transform-origin: center bottom;
+    opacity: 0;
+}
+
+.flip-char.revealed {
+    transform: rotateX(0deg) translateY(0);
+    opacity: 1;
+}
+
+/* Line break styles removed - no longer used */
+
+/* ============================================
+   BLOG ROLL CARDS
+   ============================================ */
+.blog-card {
+    position: relative;
+    background: white;
+    border-radius: 1rem;
+    overflow: hidden;
+    transition: all 0.4s var(--ease-out-expo);
+}
+
+.blog-card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, var(--accent-soft), transparent);
+    opacity: 0;
+    transition: opacity 0.4s ease;
+}
+
+.blog-card:hover::before {
+    opacity: 1;
+}
+.blog-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 20px 40px -12px rgba(0, 0, 0, 0.15);
+}
+
+/* ============================================
+   HORIZONTAL SCROLL SECTION
+   ============================================ */
+[data-horizontal-scroll] {
+    will-change: transform;
+}
+
+.journey-section {
+    position: relative;
+    background: var(--bg-secondary);
+    border-top: 1px solid var(--glass-border);
+    border-bottom: 1px solid var(--glass-border);
+}
+
+/* Semicircle transition effect */
+.semicircle-mask {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: var(--bg-primary);
+    clip-path: ellipse(100% 0% at 50% 100%);
+    transition: clip-path 0.8s var(--ease-out-expo);
+    pointer-events: none;
+    z-index: 10;
+}
+
+.semicircle-mask.expanded {
+    clip-path: ellipse(100% 100% at 50% 100%);
+}
+
+/* Mobile horizontal scroll */
+@media (max-width: 1023px) {
+    [data-horizontal-scroll] {
+            overflow-x: auto;
+            overflow-y: hidden;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        [data-horizontal-wrapper] {
+            flex-direction: column !important;
+        }
+}
+
+/* ============================================
+   FOOTER - Artistic Text Reveal
+   ============================================ */
+.footer-reveal {
+position: relative;
+overflow: hidden;
+}
+
+.footer-title {
+    font-size: clamp(4rem, 15vw, 12rem);
+    font-weight: 900;
+    letter-spacing: -0.05em;
+    line-height: 0.85;
+    color: var(--text-primary);
+}
+
+.footer-title-char {
+    display: inline-block;
+    transform: translateY(100%);
+    opacity: 0;
+}
+
+.footer-links {
+    display: flex;
+    gap: 1.5rem;
+    margin-top: 2rem;
+}
+
+.footer-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1.5rem;
+    background: var(--glass-bg);
+    backdrop-filter: blur(10px);
+    border: 1px solid var(--glass-border);
+    border-radius: 9999px;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+    transition: all 0.3s var(--ease-out-expo);
+}
+.footer-link:hover {
+    background: var(--text-primary);
+    color: white;
+    transform: translateY(-2px);
+}
+
+/* ============================================
+   PAPER TEXTURE
+   ============================================ */
 .paper {
   background-color: #f6f1ea;
   background-image:
-    radial-gradient(circle at 1px 1px, rgba(15, 23, 42, 0.05) 1px, transparent 0),
-    radial-gradient(circle at 18% 22%, rgba(249, 115, 22, 0.10), transparent 35%),
-    radial-gradient(circle at 82% 18%, rgba(14, 165, 233, 0.08), transparent 40%);
+    radial-gradient(circle at 1px 1px, rgba(15, 23, 42, 0.04) 1px, transparent 0),
+        radial-gradient(circle at 18% 22%, rgba(249, 115, 22, 0.08), transparent 35%),
+        radial-gradient(circle at 82% 18%, rgba(14, 165, 233, 0.06), transparent 40%);
   background-size: 18px 18px, auto, auto;
 }
 
+/* ============================================
+   MARQUEE ANIMATION
+   ============================================ */
 @keyframes marquee-x {
-  from {
-    transform: translateX(0);
-  }
-  to {
-    transform: translateX(-50%);
-  }
+from {
+        transform: translateX(0);
+    }
+
+        to {
+            transform: translateX(-50%);
+        }
 }
 
 .marquee {
   display: flex;
   width: max-content;
-  animation: marquee-x 20s linear infinite;
+animation: marquee-x 25s linear infinite;
   will-change: transform;
 }
 
+/* ============================================
+   REDUCED MOTION
+   ============================================ */
 @media (prefers-reduced-motion: reduce) {
+*,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
   .marquee {
     animation: none;
-    transform: none;
-  }
+.flip-word,
+    .flip-char,
+    .footer-title-char,
+    .loading-logo span {
+        transform: none !important;
+        opacity: 1 !important;
+    }
+}
+}
+
+/* ============================================
+   UTILITY CLASSES
+   ============================================ */
+.perspective {
+    perspective: var(--perspective);
+}
+
+.preserve-3d {
+    transform-style: preserve-3d;
+}
+.backface-hidden {
+    backface-visibility: hidden;
 }

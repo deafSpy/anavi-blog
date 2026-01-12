@@ -8,8 +8,13 @@
 
 <!-- Hunt Overlay Container -->
 <div id="hunt-overlay" class="hunt-overlay" data-active="false">
-  <!-- Transition Layer -->
-  <div id="transition-layer" class="transition-layer"></div>
+  <!-- Transition Layer with Loading Animation -->
+  <div id="transition-layer" class="transition-layer">
+    <div class="transition-loader">
+      <div class="loader-heart">♡</div>
+      <div class="loader-text">Loading...</div>
+    </div>
+  </div>
 
   <!-- Main Hunt Container -->
   <div id="hunt-container" class="hunt-container">
@@ -76,7 +81,7 @@
     visibility: visible;
   }
 
-  /* Transition Layer (soft fade) */
+  /* Transition Layer with Loading Animation */
   .transition-layer {
     position: fixed;
     inset: 0;
@@ -84,11 +89,61 @@
     background: var(--hunt-bg, #1a1418);
     opacity: 0;
     pointer-events: none;
-    transition: opacity 0.3s ease;
+    transition: opacity 0.4s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
 
   .transition-layer.active {
     opacity: 1;
+    pointer-events: auto;
+  }
+
+  .transition-loader {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+    opacity: 0;
+    transform: scale(0.9);
+    transition: opacity 0.3s ease, transform 0.3s ease;
+  }
+
+  .transition-layer.active .transition-loader {
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  .loader-heart {
+    font-size: 2.5rem;
+    color: var(--hunt-primary, #d4a5d9);
+    animation: heartPulse 1s ease-in-out infinite;
+    text-shadow: 0 0 20px var(--hunt-glow, rgba(212, 165, 217, 0.5));
+  }
+
+  @keyframes heartPulse {
+    0%, 100% {
+      transform: scale(1);
+      opacity: 0.8;
+    }
+    50% {
+      transform: scale(1.2);
+      opacity: 1;
+    }
+  }
+
+  .loader-text {
+    font-size: 0.75rem;
+    color: var(--hunt-primary-dim, rgba(212, 165, 217, 0.6));
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    animation: fadeInOut 1.5s ease-in-out infinite;
+  }
+
+  @keyframes fadeInOut {
+    0%, 100% { opacity: 0.4; }
+    50% { opacity: 1; }
   }
 
   /* Hunt Container */
@@ -325,10 +380,11 @@
       
       transitionLayer.classList.add('active');
       
+      // Longer transition for smoother feel
       setTimeout(() => {
         transitionLayer.classList.remove('active');
         resolve();
-      }, 350);
+      }, 600);
     });
   }
 
@@ -395,6 +451,13 @@
   function updateNavigation() {
     if (!navPrev || !navNext) return;
     
+    // In debug mode, allow free navigation
+    if (DEBUG_MODE) {
+      navPrev.disabled = currentStageIndex === 0;
+      navNext.disabled = currentStageIndex >= huntStages.length - 1;
+      return;
+    }
+    
     // Can go prev if not at start
     navPrev.disabled = currentStageIndex === 0;
     
@@ -414,7 +477,10 @@
 
   if (navNext) {
     navNext.addEventListener('click', async () => {
-      if (currentStageIndex < huntStages.length - 1 && solvedStages.has(currentStageIndex)) {
+      // In debug mode, allow navigation without solving
+      if (DEBUG_MODE && currentStageIndex < huntStages.length - 1) {
+        await goToStage(currentStageIndex + 1);
+      } else if (currentStageIndex < huntStages.length - 1 && solvedStages.has(currentStageIndex)) {
         await goToStage(currentStageIndex + 1);
       }
     });
@@ -479,6 +545,9 @@
         break;
       case 'glitch_puzzle':
         renderGlitchPuzzle(stage);
+        break;
+      case 'crossword':
+        renderCrossword(stage);
         break;
       case 'date_gate':
         renderDateGate(stage);
@@ -554,7 +623,7 @@
         ${stage.memoriesMessage ? `<p class="memories-message">${stage.memoriesMessage}</p>` : ''}
         <div class="memories-container" id="memories-container">
           ${memories.map((mem, i) => `
-            <div class="memory-card" data-index="${i}">
+            <div class="memory-card" data-index="${i}" data-speed="${0.3 + (i % 3) * 0.1}">
               <div class="memory-card-inner">
                 <img class="static-image" src="${typeof mem === 'string' ? mem : mem.image}" alt="Memory ${i + 1}" 
                      onerror="this.src='https://picsum.photos/400/600?random=${i}'" />
@@ -885,6 +954,137 @@
   }
 
   // ============================================
+  // Render Crossword Stage
+  // ============================================
+  function renderCrossword(stage) {
+    const grid = stage.grid || [
+      ['L', 'O', 'V', 'E'],
+      ['#', '#', '#', '#'],
+      ['K', 'I', 'S', 'S'],
+    ];
+    const acrossClues = stage.acrossClues || [
+      { num: 1, clue: "What we share ♡" },
+      { num: 3, clue: "Something sweet" }
+    ];
+    const downClues = stage.downClues || [];
+    
+    const rows = grid.length;
+    const cols = grid[0].length;
+    
+    // Create clue number map
+    let clueNum = 1;
+    const clueNumbers = {};
+    for (let r = 0; r < rows; r++) {
+      for (let c = 0; c < cols; c++) {
+        if (grid[r][c] !== '#') {
+          const startsAcross = (c === 0 || grid[r][c - 1] === '#') && c < cols - 1 && grid[r][c + 1] !== '#';
+          const startsDown = (r === 0 || grid[r - 1]?.[c] === '#') && r < rows - 1 && grid[r + 1]?.[c] !== '#';
+          if (startsAcross || startsDown) {
+            clueNumbers[`${r}-${c}`] = clueNum++;
+          }
+        }
+      }
+    }
+
+    const html = `
+      <div class="crossword-stage">
+        <div class="crossword-header">
+          <h2 class="crossword-title">${stage.title || '✧ Our Crossword ✧'}</h2>
+          <p class="crossword-subtitle">${stage.subtitle || 'Fill in the blanks with memories of us'}</p>
+        </div>
+        
+        <div class="crossword-grid" id="crossword-grid" style="display:grid; grid-template-columns: repeat(${cols}, 2.5rem); gap:2px;">
+          ${grid.map((row, r) => row.map((cell, c) => {
+            if (cell === '#') {
+              return `<div class="crossword-cell blocked"></div>`;
+            }
+            const numKey = `${r}-${c}`;
+            return `
+              <div class="crossword-cell">
+                ${clueNumbers[numKey] ? `<span class="crossword-cell-number">${clueNumbers[numKey]}</span>` : ''}
+                <input type="text" maxlength="1" class="crossword-cell-input" 
+                       data-row="${r}" data-col="${c}" data-answer="${cell}" />
+              </div>
+            `;
+          }).join('')).join('')}
+        </div>
+        
+        <div class="crossword-clues-wrapper">
+          <div class="crossword-clues-section">
+            <h3>Across</h3>
+            <ul>${acrossClues.map(c => `<li><span class="clue-num">${c.num}.</span> ${c.clue}</li>`).join('')}</ul>
+          </div>
+          ${downClues.length > 0 ? `
+            <div class="crossword-clues-section">
+              <h3>Down</h3>
+              <ul>${downClues.map(c => `<li><span class="clue-num">${c.num}.</span> ${c.clue}</li>`).join('')}</ul>
+            </div>
+          ` : ''}
+        </div>
+        
+        <div class="crossword-actions">
+          <button class="puzzle-submit" id="crossword-check">Check Answers</button>
+          <button class="continue-btn" id="crossword-complete" style="display:none">Continue →</button>
+        </div>
+        <p class="crossword-status" id="crossword-status"></p>
+      </div>
+    `;
+
+    if (stageContainer) stageContainer.innerHTML = html;
+
+    // Add input navigation
+    const gridEl = document.getElementById('crossword-grid');
+    if (gridEl) {
+      gridEl.querySelectorAll('.crossword-cell-input').forEach((input) => {
+        const inp = input;
+        inp.addEventListener('input', () => {
+          if (inp.value.length === 1) {
+            const r = parseInt(inp.dataset.row || '0');
+            const c = parseInt(inp.dataset.col || '0');
+            const next = gridEl.querySelector(`input[data-row="${r}"][data-col="${c + 1}"]`) ||
+                         gridEl.querySelector(`input[data-row="${r + 1}"][data-col="0"]`);
+            if (next) next.focus();
+          }
+        });
+      });
+    }
+
+    // Check answers
+    document.getElementById('crossword-check')?.addEventListener('click', () => {
+      const inputs = stageContainer?.querySelectorAll('.crossword-cell-input') || [];
+      let allCorrect = true;
+      inputs.forEach((inp) => {
+        const answer = inp.dataset.answer?.toUpperCase() || '';
+        const value = inp.value?.toUpperCase() || '';
+        inp.classList.remove('correct', 'incorrect');
+        if (value === answer) {
+          inp.classList.add('correct');
+        } else {
+          inp.classList.add('incorrect');
+          allCorrect = false;
+        }
+      });
+      
+      const status = document.getElementById('crossword-status');
+      const completeBtn = document.getElementById('crossword-complete');
+      if (allCorrect) {
+        solvedStages.add(currentStageIndex);
+        saveProgress();
+        if (status) status.textContent = "Perfect! ♡";
+        if (completeBtn) completeBtn.style.display = 'inline-block';
+      } else {
+        if (status) status.textContent = "Some letters need fixing...";
+      }
+    });
+
+    document.getElementById('crossword-complete')?.addEventListener('click', async () => {
+      if (currentStageIndex < huntStages.length - 1) {
+        await goToStage(currentStageIndex + 1);
+      }
+    });
+  }
+
+  // ============================================
   // Continue Button
   // ============================================
   function initContinueButton() {
@@ -1075,10 +1275,27 @@
   // ============================================
   // Initialization
   // ============================================
-  if (DEBUG_MODE) {
-    activateHunt();
+  function initHunt() {
+    try {
+      // Re-query elements to ensure they exist
+      const overlay = document.getElementById('hunt-overlay');
+      if (!overlay) return;
+
+      if (DEBUG_MODE) {
+        activateHunt();
+      } else {
+        initKonamiListener();
+      }
+    } catch (e) {
+      console.warn('HuntOverlay init failed:', e);
+    }
+  }
+
+  // Initialize when DOM is ready
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initHunt);
   } else {
-    initKonamiListener();
+    initHunt();
   }
 </script>
 

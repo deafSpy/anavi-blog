@@ -1,7 +1,7 @@
 /**
  * Scroll Orchestrator
- * Initializes Lenis smooth scroll and GSAP ScrollTrigger for parallax/reveals/horizontal scroll.
- * Respects prefers-reduced-motion and cleans up on page navigation.
+ * Initializes Lenis smooth scroll and GSAP ScrollTrigger
+ * Enhanced with better velocity, depth separation, and semicircle effects
  */
 
 import Lenis from 'lenis';
@@ -27,31 +27,31 @@ function setupLoadRefreshOnce() {
   window.addEventListener('load', () => ScrollTrigger.refresh(), { once: true });
 }
 
-/** Initialize Lenis smooth scroll */
+/** Initialize Lenis smooth scroll with enhanced velocity */
 function initLenis() {
   if (getReducedMotion()) return;
   if (lenis) return;
 
   try {
     lenis = new Lenis({
-      duration: 1.25,
+      duration: 1.4,  // Slightly longer for smoother feel
       easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
-      touchMultiplier: 1.25,
+      touchMultiplier: 1.5,  // More responsive on touch
       infinite: false,
       smoothWheel: true,
       syncTouch: true,
+      wheelMultiplier: 1.2,  // More velocity on wheel
     });
 
     // Lenis CSS hooks
     document.documentElement.classList.add('lenis', 'lenis-smooth');
     document.documentElement.classList.remove('lenis-stopped');
 
-    // Keep ScrollTrigger synced with Lenis.
+    // Keep ScrollTrigger synced with Lenis
     lenis.on('scroll', ScrollTrigger.update);
 
-    // Drive Lenis via GSAP ticker (avoids running multiple RAF loops).
+    // Drive Lenis via GSAP ticker
     lenisTicker = (time: number) => {
-      // GSAP ticker time is seconds; Lenis expects milliseconds.
       lenis?.raf(time * 1000);
     };
     gsap.ticker.add(lenisTicker);
@@ -62,28 +62,30 @@ function initLenis() {
   }
 }
 
-/** Parallax effect for elements with [data-parallax] */
+/** Parallax effect with depth-based separation */
 function initParallax() {
   if (getReducedMotion()) return;
 
   const parallaxElements = document.querySelectorAll<HTMLElement>('[data-parallax]');
   parallaxElements.forEach((el) => {
     const speed = parseFloat(el.dataset.parallax || '0.2');
+    const depth = parseFloat(el.dataset.depth || '1');  // Optional depth multiplier
+    
     const tween = gsap.to(el, {
-      yPercent: speed * 100,
+      yPercent: speed * 100 * depth,
       ease: 'none',
       scrollTrigger: {
         trigger: el,
         start: 'top bottom',
         end: 'bottom top',
-        scrub: true,
+        scrub: 0.5,  // Smooth scrub
       },
     });
     activeTweens.push(tween);
   });
 }
 
-/** Fade/slide reveal for elements with [data-reveal] */
+/** Simple fade/slide reveal for [data-reveal] (fallback for non-flip elements) */
 function initReveals() {
   if (getReducedMotion()) return;
 
@@ -97,13 +99,12 @@ function initReveals() {
     else if (direction === 'left') fromVars.x = 40;
     else if (direction === 'right') fromVars.x = -40;
 
-    // Critical: prevents "content appears then disappears" if ScrollTrigger fails to fire.
     const tween = gsap.from(el, {
       ...fromVars,
       immediateRender: false,
       scrollTrigger: {
         trigger: el,
-        start: 'top 85%',
+        start: 'top 90%',  // Trigger earlier
         toggleActions: 'play none none none',
       },
     });
@@ -111,7 +112,7 @@ function initReveals() {
   });
 }
 
-/** Pinned horizontal scroll for [data-horizontal-scroll] on desktop */
+/** Enhanced horizontal scroll with velocity-based movement */
 function initHorizontalScroll() {
   if (getReducedMotion()) return;
 
@@ -131,7 +132,7 @@ function initHorizontalScroll() {
       scrollTrigger: {
         trigger: container,
         pin: true,
-        scrub: 1,
+        scrub: 0.8,  // Smoother scrub with slight delay
         start: 'top top',
         end: () => `+=${scrollWidth}`,
         invalidateOnRefresh: true,
@@ -150,30 +151,34 @@ function initHorizontalScroll() {
   });
 }
 
-/** Animate semicircle deformation as it scrolls to top */
+/** Semicircle expansion effect */
 function initSemicircleAnimation() {
   if (getReducedMotion()) return;
 
   const semicircle = document.querySelector<SVGSVGElement>('[data-journey-semicircle]');
   if (!semicircle) return;
 
-  const path = semicircle.querySelector('ellipse') || semicircle.querySelector('path');
-  if (!path) return;
+  const ellipse = semicircle.querySelector('ellipse');
+  if (!ellipse) return;
 
-  const tween = gsap.to(path, {
-    attr: { ry: 0 },
-    ease: 'none',
-    scrollTrigger: {
-      trigger: semicircle,
-      start: 'top bottom',
-      end: 'top top',
-      scrub: 1,
-    },
-  });
+  // Animate the ellipse ry from 50 to 0 as it scrolls up
+  const tween = gsap.fromTo(ellipse,
+    { attr: { ry: 50 } },
+    {
+      attr: { ry: 0 },
+      ease: 'none',
+      scrollTrigger: {
+        trigger: semicircle,
+        start: 'top bottom',
+        end: 'top 20%',
+        scrub: 1,
+      },
+    }
+  );
   activeTweens.push(tween);
 }
 
-/** Stagger reveal for blog list items with [data-stagger] */
+/** Stagger reveal for blog items */
 function initStaggerReveal() {
   if (getReducedMotion()) return;
 
@@ -186,12 +191,12 @@ function initStaggerReveal() {
       opacity: 0,
       y: 30,
       duration: 0.6,
-      stagger: 0.1,
+      stagger: 0.08,
       ease: 'power2.out',
       immediateRender: false,
       scrollTrigger: {
         trigger: container,
-        start: 'top 80%',
+        start: 'top 85%',  // Earlier trigger
         toggleActions: 'play none none none',
       },
     });
@@ -199,9 +204,29 @@ function initStaggerReveal() {
   });
 }
 
+/** Navbar scroll behavior - hide on scroll down, show on scroll up */
+function initNavbarScroll() {
+  const navbar = document.querySelector('[data-navbar]') as HTMLElement;
+  if (!navbar) return;
+
+  let lastScrollY = 0;
+  
+  if (lenis) {
+    lenis.on('scroll', ({ scroll }: { scroll: number }) => {
+      if (scroll > lastScrollY && scroll > 100) {
+        // Scrolling down
+        gsap.to(navbar, { y: -100, duration: 0.3, ease: 'power2.out' });
+      } else {
+        // Scrolling up
+        gsap.to(navbar, { y: 0, duration: 0.3, ease: 'power2.out' });
+      }
+      lastScrollY = scroll;
+    });
+  }
+}
+
 /** Initialize all scroll effects */
 export async function init() {
-  // Guard against double-init on the same page load.
   if (initialized) {
     ScrollTrigger.refresh();
     return;
@@ -210,22 +235,31 @@ export async function init() {
 
   setupLoadRefreshOnce();
   
-  // Play page load animations first (overlay + line break)
-  await playPageLoadSequence();
-
-  // Then initialize Lenis and other scroll effects
+  // Initialize Lenis FIRST - before any animations
   initLenis();
+  
+  // Initialize scroll effects that don't depend on page load
   initParallax();
   initReveals();
   initHorizontalScroll();
   initStaggerReveal();
   initSemicircleAnimation();
+  initNavbarScroll();
 
-  // Initialize scroll-triggered animations
+  // Initialize scroll-triggered animations from PageAnimations
   initScrollAnimations();
+  
+  // Play page load animations (non-blocking - wrap in try/catch)
+  try {
+    await playPageLoadSequence();
+  } catch (err) {
+    console.error('[ScrollOrchestrator] Page load sequence failed', err);
+  }
 
-  // Refresh after initial layout settles.
+  // Refresh after layout settles
   requestAnimationFrame(() => ScrollTrigger.refresh());
+  
+  console.log('[ScrollOrchestrator] Initialized successfully');
 }
 
 /** Cleanup all scroll effects */
@@ -234,7 +268,6 @@ export function destroy() {
     activeTweens.pop()?.kill();
   }
 
-  // Revert pins / inline styles.
   ScrollTrigger.getAll().forEach((st) => st.kill(true));
   ScrollTrigger.clearMatchMedia();
 
@@ -254,11 +287,9 @@ export function destroy() {
 
 // Auto-init when imported client-side
 if (typeof window !== 'undefined') {
-  // Astro View Transitions
   document.addEventListener('astro:before-swap', destroy);
   document.addEventListener('astro:page-load', init);
 
-  // Fallback (should be a no-op because of the init() guard)
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', init, { once: true });
   } else {
