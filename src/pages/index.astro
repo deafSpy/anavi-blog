@@ -113,15 +113,15 @@ const lastName = "DASGUPTA";
       <img 
         src="/books/horizontalstack.png" 
         alt="" 
-        class="blog-section__book blog-section__book--horizontal"
+        class="blog-section__book blog-section__book--vertical"
         data-book-pop
       />
-      <img 
+      <!-- <img 
         src="/books/verticalstack.png" 
         alt="" 
         class="blog-section__book blog-section__book--vertical"
         data-book-pop
-      />
+      /> -->
     </div>
 
     <div class="blog-section__header">
@@ -410,8 +410,8 @@ const lastName = "DASGUPTA";
     top: 0;
     left: 0;
     right: 0;
-    /* Extend to cover hero + blog section (use large value) */
-    height: calc(100vh + 600px);
+    /* Extend to cover hero + entire blog section */
+    height: calc(100vh + 1200px);
     z-index: 1; /* Low z-index - content goes on top */
     pointer-events: none; /* Allow clicks through */
     overflow: visible;
@@ -421,7 +421,7 @@ const lastName = "DASGUPTA";
     width: 100%;
     height: 100%;
     object-fit: cover;
-    object-position: center;
+    object-position: center top;
     /* filter: blur(0px); */
     transform: scale(1.02);
   }
@@ -431,10 +431,12 @@ const lastName = "DASGUPTA";
     inset: 0;
     background: linear-gradient(
       180deg,
-      rgba(250, 250, 250, 0.4) 0%,
-      rgba(250, 250, 250, 0.55) 40%,
-      rgba(250, 250, 250, 0.75) 70%,
-      rgba(245, 245, 240, 0.95) 100%
+      rgba(250, 250, 250, 0.3) 0%,
+      rgba(250, 250, 250, 0.4) 30%,
+      rgba(250, 250, 250, 0.6) 50%,
+      rgba(250, 250, 250, 0.8) 70%,
+      rgba(245, 245, 240, 1) 90%,
+      rgba(245, 245, 240, 1) 100%
     );
   }
 
@@ -471,12 +473,23 @@ const lastName = "DASGUPTA";
   }
 
   .hero__deco--arrow {
-    width: 30px;
-    height: 30px;
-    left: 25%;
-    top: 70%;
-    animation-delay: -4s;
-    opacity: 0.4;
+    width: 40px;
+    height: 40px;
+    left: 50%;
+    bottom: 3rem;
+    top: auto;
+    transform: translateX(-50%);
+    animation: arrowBounce 2s ease-in-out infinite;
+    opacity: 0.6;
+  }
+
+  @keyframes arrowBounce {
+    0%, 100% {
+      transform: translateX(-50%) translateY(0);
+    }
+    50% {
+      transform: translateX(-50%) translateY(10px);
+    }
   }
 
   @keyframes decoFloat {
@@ -557,9 +570,9 @@ const lastName = "DASGUPTA";
      ============================================ */
   .blog-section {
     position: relative;
-    padding: 16rem 2rem 8rem; /* Increased top padding even more */
-    margin-top: 8rem; /* More margin for spacing */
-    background: transparent; /* Let hero background bleed through */
+    padding: 8rem 2rem 8rem;
+    margin-top: 100vh; /* Significant space between hero and blog section */
+    background: #f5f6ef; /* Match primary background color */
     z-index: 5; /* Below the hero background */
   }
 
@@ -745,7 +758,7 @@ const lastName = "DASGUPTA";
     }
 
     .hero__background {
-      height: calc(100vh + 400px); /* Full bleed on mobile too */
+      height: calc(100vh + 800px); /* Full bleed on mobile too */
     }
 
     .hero__text-container {

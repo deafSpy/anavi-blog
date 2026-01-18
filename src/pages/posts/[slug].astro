@@ -90,7 +90,7 @@ const { post } = Astro.props as { post: BlogPost };
 
     {post.metadata?.image?.url && (
       <div
-        class="post-image overflow-hidden rounded-2xl border border-stone-200 bg-white shadow-lg"
+        class="post-image overflow-hidden rounded-2xl border border-stone-200 shadow-lg"
       >
         <img
           src={post.metadata.image.url}
