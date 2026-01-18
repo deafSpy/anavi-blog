@@ -3,14 +3,14 @@ import '../styles/global.css';
 import '../styles/hunt.css';
 import { ViewTransitions } from 'astro:transitions';
 import SiteFooter from '../components/SiteFooter.astro';
-import HuntOverlay from '../hunt/HuntOverlay.astro';
 
 interface Props {
   title?: string;
   description?: string;
+  isHuntPage?: boolean;
 }
 
-const { title = 'Anavi Dasgupta', description = 'Purpose-led portfolio and field journal.' } =
+const { title = 'Anavi Dasgupta', description = 'Purpose-led portfolio and field journal.', isHuntPage = false } =
   Astro.props;
 ---
 
@@ -30,8 +30,14 @@ const { title = 'Anavi Dasgupta', description = 'Purpose-led portfolio and field
     <main class="min-h-screen">
       <slot />
     </main>
-    <SiteFooter />
-    <HuntOverlay />
+    {!isHuntPage && <SiteFooter />}
+    
+    <!-- Lightweight Konami trigger for non-hunt pages -->
+    {!isHuntPage && (
+      <script>
+        import { initKonamiTrigger } from '../components/KonamiTrigger';
+        // Auto-initializes on import
+      </script>
+    )}
   </body>
 </html>
-

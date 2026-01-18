@@ -33,8 +33,7 @@ PERFORMANCE BUDGET:
 - Keep animation/runtime assets lean (<30KB per Rive where possible).
 
 CONTENT & CMS:
-- Structure components as reusable Storyblok blocks (hero, gallery, text, audio, CTA).
-- Map Storyblok fields explicitly; validate required fields; provide safe defaults.
+- api to fetch from google docs
 - Never expose secrets; pull config from environment variables only.
 
 TESTING & QUALITY:

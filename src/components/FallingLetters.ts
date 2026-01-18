@@ -17,18 +17,18 @@ Common.setDecomp(decomp);
 // CONFIGURATION
 // ============================================
 export const CONFIG = {
-  fontSize: 0.3,            // 30vw
+  fontSize: 0.1,            // 30vw
   fontSizeMin: 150,
   fontSizeMax: 450,
   
   gravity: 2,
   
-  // Physics - tuned for stable stacking
-  restitution: 0.05,
-  friction: 0.9,
-  frictionStatic: 5,
-  frictionAir: 0.02,
-  density: 0.004,
+  // Physics - tuned for stable stacking (high friction, low bounce)
+  restitution: 0.01,        // Almost no bounce
+  friction: 0.99,           // Very high friction
+  frictionStatic: 10,       // High static friction for resting
+  frictionAir: 0.08,        // Higher air resistance to dampen movement
+  density: 0.005,
   
   // Vertex sampling - points per letter outline
   vertexCount: 24,

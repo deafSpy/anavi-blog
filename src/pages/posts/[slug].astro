@@ -1,9 +1,9 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
-import { fetchPublishedPosts, type Post } from '../../lib/cmsdocs';
+import { fetchAllPosts, type BlogPost } from '../../lib/google-docs';
 
 export async function getStaticPaths() {
-  const posts = await fetchPublishedPosts();
+  const posts = await fetchAllPosts();
   return posts.map((post) => ({
     params: { slug: post.slug },
     props: { post },
@@ -12,7 +12,7 @@ export async function getStaticPaths() {
 
 export const prerender = true;
 
-const { post } = Astro.props as { post: Post };
+const { post } = Astro.props as { post: BlogPost };
 ---
 
 <BaseLayout title={post.title} description={post.description}>
@@ -212,8 +212,8 @@ const { post } = Astro.props as { post: Post };
   }
 
   .post-content :global(p) {
-    margin-bottom: 1.25rem;
-    line-height: 1.8;
+    margin-bottom: 1.5rem; /* More space between paragraphs */
+    line-height: 1.65; /* Tighter line spacing within paragraph */
   }
 
   .post-content :global(ul),
@@ -226,6 +226,16 @@ const { post } = Astro.props as { post: Post };
     padding-left: 1.5rem;
     font-style: italic;
     color: #57534e;
+  }
+
+  /* Centered blog images */
+  .post-content :global(img),
+  .post-content :global(.blog-image) {
+    display: block;
+    margin: 2rem auto;
+    max-width: 100%;
+    height: auto;
+    border-radius: 0.75rem;
   }
 </style>
 

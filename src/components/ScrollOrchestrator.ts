@@ -244,7 +244,7 @@ export async function init() {
   initHorizontalScroll();
   initStaggerReveal();
   initSemicircleAnimation();
-  initNavbarScroll();
+  // initNavbarScroll(); // Disabled - keeping navbar always visible
 
   // Initialize scroll-triggered animations from PageAnimations
   initScrollAnimations();

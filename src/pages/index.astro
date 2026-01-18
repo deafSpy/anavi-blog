@@ -1,16 +1,27 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
-import { fetchPublishedPosts } from '../lib/cmsdocs';
-import JourneyStrip from '../components/JourneyStrip.astro';
+import { fetchAllPosts } from '../lib/google-docs';
 
-const posts = await fetchPublishedPosts();
+const posts = await fetchAllPosts();
 
-// Subtitle words for staggered animation
-const subtitleWords = "Purpose-led designer crafting meaningful digital experiences.".split(' ');
+// Hero name split into two lines
+const firstName = "ANAVI";
+const lastName = "DASGUPTA";
 ---
 
 <BaseLayout title="Anavi Dasgupta" description="Purpose-led portfolio and field journal">
-  <!-- Loading overlay - covers entire screen -->
+  <!-- ============================================
+       ALA-STYLE LOADING OVERLAY (Skip for now per user request)
+       ============================================ -->
+  <div id="ala-loader" class="ala-loader" style="display: none;">
+    <!-- Loader content preserved but hidden -->
+  </div>
+
+  <!-- ============================================
+       ORIGINAL LOADING OVERLAY (COMMENTED OUT)
+       Preserved for potential future use
+       ============================================ -->
+  <!--
   <div id="loading-overlay" class="loading-overlay">
     <div class="loading-content">
       <div class="loading-logo">
@@ -23,149 +34,63 @@ const subtitleWords = "Purpose-led designer crafting meaningful digital experien
       </div>
     </div>
   </div>
-
-  <!-- Scripts for physics simulations -->
-  <script>
-    import { initFallingLetters, dropLetters } from '../components/FallingLetters';
-    import { initPhysicsBalls, showBalls } from '../components/PhysicsBalls';
-
-    async function initPage() {
-      const loadingOverlay = document.getElementById('loading-overlay');
-      const subtitleEl = document.getElementById('hero-subtitle');
-      const logoChars = loadingOverlay?.querySelectorAll('.loading-logo span');
-      const loadingBar = loadingOverlay?.querySelector('.loading-bar-fill') as HTMLElement;
-
-      try {
-        // Animate loading logo characters
-        if (logoChars) {
-          logoChars.forEach((char, i) => {
-            setTimeout(() => {
-              (char as HTMLElement).classList.add('revealed');
-            }, 200 + i * 100);
-          });
-        }
-
-        // Animate loading bar
-        if (loadingBar) {
-          loadingBar.style.transform = 'scaleX(1)';
-        }
-
-        // Initialize both physics simulations
-        await Promise.all([
-          initFallingLetters(),
-          initPhysicsBalls('physics-balls-container'),
-        ]);
-
-        // Wait for loading animation
-        await new Promise(r => setTimeout(r, 1500));
-
-        // Fade out loading overlay
-        if (loadingOverlay) {
-          loadingOverlay.classList.add('fade-out');
-        }
-
-        await new Promise(r => setTimeout(r, 600));
-
-        // Hide overlay completely
-        if (loadingOverlay) {
-          loadingOverlay.style.display = 'none';
-        }
-
-        // Drop the letters and show balls
-        dropLetters();
-        showBalls();
-
-        // Show subtitle after letters settle
-        await new Promise(r => setTimeout(r, 1500));
-        if (subtitleEl) {
-          subtitleEl.classList.add('visible');
-        }
-
-      } catch (err) {
-        console.error('[InitPage] Failed:', err);
-        if (loadingOverlay) {
-          loadingOverlay.style.display = 'none';
-        }
-      }
-    }
-
-    // Initialize scroll effects
-    import('../components/ScrollOrchestrator').then(({ init }) => {
-      setTimeout(init, 100);
-    });
-
-    if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', initPage);
-    } else {
-      initPage();
-    }
-  </script>
+  -->
 
   <!-- ============================================
-       NAVBAR - Full Width with Contrast Effect
+       NAVBAR - Clean, Always Visible
        ============================================ -->
-  <nav class="navbar" data-navbar>
-    <div class="navbar-inner">
-      <a href="/" class="navbar-logo">Anavi</a>
-      
-      <div class="navbar-links">
-        <a href="#about" class="navbar-link">About</a>
-        <a href="#blog" class="navbar-link">Blog</a>
-        <a href="#contact" class="navbar-link">Contact</a>
-      </div>
+  <nav class="site-nav" data-navbar>
+    <a href="/" class="site-nav__brand" data-nav-brand>
+      ANAVI DASGUPTA
+    </a>
+    
+    <div class="site-nav__links" data-nav-links>
+      <a href="#work" class="site-nav__link" data-nav-link="work">
+        WORK
+        <span class="site-nav__underline"></span>
+      </a>
+      <span class="site-nav__comma">,</span>
+      <a href="#blog" class="site-nav__link" data-nav-link="blog">
+        BLOG
+        <span class="site-nav__underline"></span>
+      </a>
+      <span class="site-nav__comma">,</span>
+      <a href="#contact" class="site-nav__link" data-nav-link="contact">
+        CONTACT
+        <span class="site-nav__underline"></span>
+      </a>
     </div>
   </nav>
 
   <!-- ============================================
-       HERO SECTION - Grid Layout
+       HERO SECTION - Text at Bottom, Centered
        ============================================ -->
-  <section class="hero-section">
-    <!-- Subtitle at top -->
-    <div id="hero-subtitle" class="hero-subtitle">
-      {subtitleWords.map((word, i) => (
-        <span class="subtitle-word-wrapper">
-          <span class="subtitle-word" style={`--splitTextDelay: ${i}`}>{word}</span>
-        </span>
-      ))}
-    </div>
-
-    <!-- Grid container for hero boxes -->
-    <div class="hero-grid">
-      <!-- Left box (3/5) - Falling letters -->
-      <div class="hero-box hero-box-left">
-        <div id="falling-letters-container" class="falling-letters-container"></div>
-      </div>
-
-      <!-- Right column (2/5) - Two stacked boxes -->
-      <div class="hero-right-column">
-        <!-- Top box - Physics balls -->
-        <div class="hero-box hero-box-right-top">
-          <div id="physics-balls-container" class="physics-balls-container"></div>
-        </div>
-
-        <!-- Bottom box - Empty for now -->
-        <div class="hero-box hero-box-right-bottom">
-          <div class="empty-box-content">
-            <!-- Reserved for future content -->
-          </div>
-        </div>
+  <section class="hero" id="work">
+    <!-- Central Portrait -->
+    <div class="hero__portrait" data-hero-portrait>
+      <div class="hero__portrait-inner">
+        <img src="/anavijaipur.png" alt="Anavi Dasgupta" class="hero__portrait-img" />
       </div>
     </div>
 
-    <!-- Scroll Indicator -->
-    <div class="scroll-indicator" data-scroll-indicator>
-      <svg class="scroll-arrow" width="24" height="36" viewBox="0 0 24 36" fill="none">
-        <path class="scroll-arrow-path" d="M12 2 L12 30 M4 22 L12 32 L20 22" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-      </svg>
+    <!-- Hero Text at Bottom - Two Lines -->
+    <div class="hero__text-container">
+      <h1 class="hero__title" data-hero-text>
+        <span class="hero__line" data-hero-line>{firstName}</span>
+        <span class="hero__line" data-hero-line>{lastName}</span>
+      </h1>
     </div>
+
+    <!-- Blue glow border effect -->
+    <div class="hero__glow" aria-hidden="true"></div>
   </section>
 
   <!-- ============================================
-       ABOUT SECTION - Journey Strip
+       BOOKS SIMULATION SECTION (Matter.js)
        ============================================ -->
-  <div class="w-full" id="about">
-    <JourneyStrip />
-  </div>
+  <section class="books-section" id="books-simulation">
+    <canvas id="books-canvas"></canvas>
+  </section>
 
   <!-- ============================================
        BLOG ROLL SECTION
@@ -207,311 +132,508 @@ const subtitleWords = "Purpose-led designer crafting meaningful digital experien
       </div>
     </div>
   </section>
+
+  <!-- ============================================
+       GSAP ANIMATIONS SCRIPT
+       ============================================ -->
+  <script>
+    import gsap from 'gsap';
+    import { ScrollTrigger } from 'gsap/ScrollTrigger';
+
+    gsap.registerPlugin(ScrollTrigger);
+
+    function initAnimations() {
+      const navBrand = document.querySelector('[data-nav-brand]');
+      const navLinks = document.querySelectorAll('[data-nav-links] .site-nav__link');
+      const heroLines = document.querySelectorAll('[data-hero-line]');
+      const heroPortrait = document.querySelector('[data-hero-portrait]');
+      const heroGlow = document.querySelector('.hero__glow');
+
+      // Create master timeline
+      const tl = gsap.timeline({ delay: 0.3 });
+
+      // Navbar brand fade in
+      tl.fromTo(navBrand,
+        { opacity: 0, y: -20 },
+        { opacity: 1, y: 0, duration: 0.8, ease: "power3.out" },
+        0
+      );
+
+      // Nav links stagger in
+      tl.fromTo(navLinks,
+        { opacity: 0, x: 20 },
+        { opacity: 1, x: 0, duration: 0.6, stagger: 0.1, ease: "power2.out" },
+        0.2
+      );
+
+      // Hero portrait reveal
+      tl.fromTo(heroPortrait,
+        { 
+          clipPath: "inset(100% 0% 0% 0%)",
+          scale: 1.05
+        },
+        { 
+          clipPath: "inset(0% 0% 0% 0%)",
+          scale: 1,
+          duration: 1.2,
+          ease: "power3.out"
+        },
+        0.4
+      );
+
+      // Hero text lines stagger
+      tl.fromTo(heroLines,
+        { 
+          opacity: 0,
+          y: 80
+        },
+        { 
+          opacity: 1,
+          y: 0,
+          duration: 0.8,
+          stagger: 0.15,
+          ease: "power3.out"
+        },
+        0.6
+      );
+
+      // Glow border fade in
+      tl.fromTo(heroGlow,
+        { opacity: 0 },
+        { opacity: 1, duration: 1, ease: "power2.out" },
+        0.8
+      );
+    }
+
+    // Initialize section-based navbar underline tracking
+    function initSectionTracking() {
+      const sections = ['work', 'blog', 'contact'];
+      
+      sections.forEach(sectionId => {
+        const section = document.getElementById(sectionId);
+        const navLink = document.querySelector(`[data-nav-link="${sectionId}"]`);
+        const underline = navLink?.querySelector('.site-nav__underline');
+        
+        if (!section || !navLink || !underline) return;
+        
+        ScrollTrigger.create({
+          trigger: section,
+          start: 'top center',
+          end: 'bottom center',
+          onEnter: () => {
+            gsap.to(underline, { scaleX: 1, duration: 0.3, ease: 'power2.out' });
+          },
+          onLeave: () => {
+            gsap.to(underline, { scaleX: 0, duration: 0.3, ease: 'power2.in' });
+          },
+          onEnterBack: () => {
+            gsap.to(underline, { scaleX: 1, duration: 0.3, ease: 'power2.out' });
+          },
+          onLeaveBack: () => {
+            gsap.to(underline, { scaleX: 0, duration: 0.3, ease: 'power2.in' });
+          }
+        });
+      });
+    }
+
+    // Initialize scroll effects
+    import('../components/ScrollOrchestrator').then(({ init }) => {
+      setTimeout(init, 100);
+    }).catch(() => {});
+
+    // Run animations
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', () => {
+        initAnimations();
+        setTimeout(initSectionTracking, 500);
+        initBooksSimulation();
+      });
+    } else {
+      initAnimations();
+      setTimeout(initSectionTracking, 500);
+      initBooksSimulation();
+    }
+
+    // Matter.js Book Simulation
+    async function initBooksSimulation() {
+      const Matter = await import('matter-js');
+      const { Engine, Render, Runner, Bodies, Composite, Body, Events } = Matter;
+      
+      const canvas = document.getElementById('books-canvas') as HTMLCanvasElement;
+      if (!canvas) return;
+      
+      const section = document.getElementById('books-simulation');
+      if (!section) return;
+
+      // Set canvas size
+      const width = section.offsetWidth;
+      const height = 300;
+      canvas.width = width;
+      canvas.height = height;
+
+      // Create engine
+      const engine = Engine.create({
+        gravity: { x: 0.15, y: 1 } // Slight rightward gravity for toppling effect
+      });
+
+      // Create renderer
+      const render = Render.create({
+        canvas: canvas,
+        engine: engine,
+        options: {
+          width: width,
+          height: height,
+          wireframes: false,
+          background: '#fafafa'
+        }
+      });
+
+      // Ground
+      const ground = Bodies.rectangle(width / 2, height + 25, width + 100, 50, {
+        isStatic: true,
+        render: { fillStyle: '#fafafa' }
+      });
+
+      // Right wall (invisible pusher)
+      const rightWall = Bodies.rectangle(width + 50, height / 2, 100, height, {
+        isStatic: true,
+        render: { fillStyle: 'transparent' }
+      });
+
+      // Create books with varying sizes - tightly packed
+      const books: typeof Bodies.rectangle[] = [];
+      const numBooks = 25; // More books for tighter packing
+      
+      for (let i = 0; i < numBooks; i++) {
+        // Randomly decide if showing spine (thin) or pages (slightly thicker)
+        const isSpine = Math.random() > 0.4; // More spines
+        
+        // Book dimensions - narrower overall
+        const bookHeight = 50 + Math.random() * 45; // 50-95px
+        const bookWidth = isSpine ? (6 + Math.random() * 8) : (12 + Math.random() * 13); // Spine: 6-14px, Pages: 12-25px
+        
+        // Color based on type
+        const spineColors = ['#1a1a1a', '#2d2d2d', '#8b4513', '#654321', '#3d3d3d', '#4a3728'];
+        const pageColors = ['#f5f5dc', '#faf0e6', '#fffdf7', '#fefefa', '#f8f4e3'];
+        const color = isSpine 
+          ? spineColors[Math.floor(Math.random() * spineColors.length)]
+          : pageColors[Math.floor(Math.random() * pageColors.length)];
+        
+        // Position books more tightly - clustered in left/center
+        const x = 30 + (i * (width - 60) / numBooks) + Math.random() * 15;
+        const y = -50 - Math.random() * 150; // Start above canvas
+        
+        const book = Bodies.rectangle(x, y, bookWidth, bookHeight, {
+          friction: 0.95, // High friction
+          frictionStatic: 0.9,
+          frictionAir: 0.01,
+          restitution: 0.05, // Less bouncy
+          density: 0.002,
+          angle: -0.15 + Math.random() * 0.3, // Slight random rotation
+          render: {
+            fillStyle: color,
+            strokeStyle: isSpine ? 'transparent' : '#ddd',
+            lineWidth: isSpine ? 0 : 1
+          }
+        });
+        
+        books.push(book);
+      }
+
+      // Add all bodies
+      Composite.add(engine.world, [ground, rightWall, ...books]);
+
+      // Run simulation
+      Render.run(render);
+      const runner = Runner.create();
+      Runner.run(runner, engine);
+
+      // Apply initial rightward impulse after a delay
+      setTimeout(() => {
+        books.forEach((book, i) => {
+          setTimeout(() => {
+            Body.applyForce(book, book.position, { x: 0.003 + Math.random() * 0.002, y: 0 });
+          }, i * 100);
+        });
+      }, 500);
+
+      // Handle resize
+      window.addEventListener('resize', () => {
+        const newWidth = section.offsetWidth;
+        canvas.width = newWidth;
+        render.options.width = newWidth;
+        Render.setPixelRatio(render, window.devicePixelRatio);
+      });
+    }
+  </script>
 </BaseLayout>
 
 <style>
   /* ============================================
-     LOADING OVERLAY
+     NAVBAR - Clean, Always Visible
      ============================================ */
-  .loading-overlay {
-    position: fixed;
-    inset: 0;
-    z-index: 9999;
-    background-color: #0c0a09;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: opacity 0.6s ease;
-  }
-
-  .loading-overlay.fade-out {
-    opacity: 0;
-    pointer-events: none;
-  }
-
-  .loading-content {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 2rem;
-  }
-
-  .loading-logo {
-    display: flex;
-    font-size: clamp(3rem, 12vw, 8rem);
-    font-weight: 900;
-    color: white;
-    overflow: hidden;
-  }
-
-  .loading-logo span {
-    display: inline-block;
-    transform: translateY(100%) rotateX(-45deg);
-    opacity: 0;
-    transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.6s ease;
-    transition-delay: calc(var(--char-index) * 0.08s);
-  }
-
-  .loading-logo span.revealed {
-    transform: translateY(0) rotateX(0);
-    opacity: 1;
-  }
-
-  .loading-bar {
-    width: 120px;
-    height: 2px;
-    background: rgba(255, 255, 255, 0.2);
-    border-radius: 2px;
-    overflow: hidden;
-  }
-
-  .loading-bar-fill {
-    height: 100%;
-    width: 100%;
-    background: white;
-    transform: scaleX(0);
-    transform-origin: left;
-    transition: transform 1s ease;
-  }
-
-  /* ============================================
-     NAVBAR
-     ============================================ */
-  .navbar {
+  .site-nav {
     position: fixed;
     top: 0;
     left: 0;
     right: 0;
-    z-index: 100;
-    padding: 1.25rem 0;
+    z-index: 1000;
+    padding: 1.5rem 2.5rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    background: transparent;
     mix-blend-mode: difference;
   }
 
-  .navbar-inner {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 0 2rem;
-  }
-
-  .navbar-logo {
-    font-size: 1.25rem;
-    font-weight: 700;
-    color: white;
-    text-decoration: none;
-    letter-spacing: -0.02em;
-  }
-
-  .navbar-links {
-    display: flex;
-    align-items: center;
-    gap: 2.5rem;
-  }
-
-  .navbar-link {
-    font-size: 0.875rem;
+  .site-nav__brand {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    font-size: 0.75rem;
     font-weight: 500;
+    letter-spacing: 0.15em;
     color: white;
     text-decoration: none;
-    text-transform: uppercase;
-    letter-spacing: 0.1em;
-    transition: opacity 0.2s ease;
+    transition: opacity 0.3s ease;
   }
 
-  .navbar-link:hover {
+  .site-nav__brand:hover {
     opacity: 0.6;
   }
 
+  .site-nav__links {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 0.25rem;
+  }
+
+  .site-nav__comma {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    font-size: 0.7rem;
+    font-weight: 500;
+    color: white;
+    margin: 0 0.15rem;
+  }
+
+  .site-nav__link {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    font-size: 0.7rem;
+    font-weight: 500;
+    letter-spacing: 0.12em;
+    color: white;
+    text-decoration: none;
+    text-transform: uppercase;
+    padding: 0.15rem 0;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .site-nav__underline {
+    display: block;
+    width: 100%;
+    height: 1px;
+    background: white;
+    transform: scaleX(0);
+    transform-origin: center;
+  }
+
+  .site-nav__link:hover .site-nav__underline {
+    transform: scaleX(1);
+  }
+
+  .site-nav__link.active .site-nav__underline {
+    transform: scaleX(1);
+  }
+
   /* ============================================
-     HERO SECTION - Grid Layout
+     HERO SECTION
      ============================================ */
-  .hero-section {
+  .hero {
     position: relative;
     min-height: 100vh;
-    background: #faf9f7;
+    width: 100%;
+    background: #fafafa;
     display: flex;
     flex-direction: column;
+    align-items: center;
+    justify-content: flex-end;
+    padding: 2rem;
+    padding-bottom: 3rem;
+    overflow: visible;
   }
 
-  /* Subtitle at top */
-  .hero-subtitle {
-    padding: 6rem 2rem 2rem;
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.4rem;
-    max-width: 500px;
-    margin-left: auto;
-    margin-right: 2rem;
+  /* Blue glow border */
+  .hero__glow {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 50;
+    border: 4px solid rgba(59, 130, 246, 0.5);
+    box-shadow: 
+      inset 0 0 80px rgba(59, 130, 246, 0.1),
+      inset 0 0 200px rgba(59, 130, 246, 0.05);
   }
 
-  .subtitle-word-wrapper {
-    display: inline-block;
+  /* Portrait */
+  .hero__portrait {
+    position: absolute;
+    top: 40%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: clamp(200px, 25vw, 300px);
+    aspect-ratio: 3/4;
+    z-index: 2;
     overflow: hidden;
-    padding-bottom: 0.2em;
-    margin-bottom: -0.2em;
-  }
-
-  .subtitle-word {
-    display: inline-block;
-    font-size: 1rem;
-    font-weight: 400;
-    color: #44403c;
-    transform: translateY(110%);
-    will-change: transform, opacity;
-  }
-
-  .hero-subtitle.visible .subtitle-word {
-    transform: translateY(0);
-    transition: 
-      transform 1.2s cubic-bezier(0.84, 0, 0.16, 1),
-      opacity 1.2s linear;
-    transition-delay: calc(0.05s * var(--splitTextDelay));
-  }
-
-  /* Hero Grid */
-  .hero-grid {
-    flex: 1;
-    display: grid;
-    grid-template-columns: 3fr 2fr;
-    min-height: 0;
-  }
-
-  .hero-right-column {
-    display: flex;
-    flex-direction: column;
-  }
-
-  /* Hero Boxes */
-  .hero-box {
-    position: relative;
-    overflow: hidden;
+    box-shadow: 0 25px 80px rgba(0, 0, 0, 0.15);
     border: 1px solid rgba(0, 0, 0, 0.08);
   }
 
-  .hero-box-left {
-    border-left: none;
-    border-bottom: none;
+  .hero__portrait-inner {
+    width: 100%;
+    height: 100%;
   }
 
-  .hero-box-right-top {
-    flex: 1;
-    border-right: none;
-    border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+  .hero__portrait-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center top;
   }
 
-  .hero-box-right-bottom {
-    flex: 1;
-    border-right: none;
-    border-bottom: none;
-    background: #f5f4f2;
+  /* Text Container - Positioned at bottom, centered */
+  .hero__text-container {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    text-align: center;
+    padding: 0 1rem;
   }
 
-  .falling-letters-container {
-    position: absolute;
-    inset: 0;
-  }
-
-  .physics-balls-container {
-    position: absolute;
-    inset: 0;
-  }
-
-  .empty-box-content {
-    position: absolute;
-    inset: 0;
+  .hero__title {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    font-size: clamp(3.5rem, 14vw, 12rem);
+    font-weight: 900;
+    line-height: 0.85;
+    letter-spacing: -0.04em;
+    color: #0a0a0a;
+    margin: 0;
     display: flex;
+    flex-direction: column;
     align-items: center;
+  }
+
+  .hero__line {
+    display: flex;
     justify-content: center;
   }
 
+  .hero__char {
+    display: block;
+    will-change: transform, opacity;
+  }
+
   /* ============================================
-     SCROLL INDICATOR
+     BOOKS SIMULATION SECTION
      ============================================ */
-  .scroll-indicator {
-    position: absolute;
-    bottom: 2rem;
-    left: 50%;
-    transform: translateX(-50%);
-    z-index: 5;
-    color: #a8a29e;
-    opacity: 1;
-    transition: opacity 0.5s ease;
+  .books-section {
+    width: 100%;
+    height: 300px;
+    background: #fafafa;
+    overflow: hidden;
+    position: relative;
   }
 
-  .scroll-indicator.hidden {
-    opacity: 0;
-    pointer-events: none;
-  }
-
-  .scroll-arrow-path {
-    stroke-dasharray: 50;
-    stroke-dashoffset: 50;
-    animation: drawArrow 2s ease-in-out infinite;
-  }
-
-  @keyframes drawArrow {
-    0% { stroke-dashoffset: 50; opacity: 0.3; }
-    50% { stroke-dashoffset: 0; opacity: 1; }
-    100% { stroke-dashoffset: -50; opacity: 0.3; }
+  #books-canvas {
+    width: 100%;
+    height: 100%;
+    display: block;
   }
 
   /* ============================================
      BLOG SECTION
      ============================================ */
   .blog-section {
-    padding: 5rem 0;
-    background: #faf9f7;
+    padding: 6rem 0;
+    background: #fafafa;
+  }
+
+  /* ============================================
+     LOADER (Hidden for now)
+     ============================================ */
+  .ala-loader {
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    background: #0a0a0a;
+    display: none;
   }
 
   /* ============================================
      MOBILE RESPONSIVE
      ============================================ */
   @media (max-width: 768px) {
-    .navbar-inner {
-      padding: 0 1rem;
+    .site-nav {
+      padding: 1.25rem 1.5rem;
     }
 
-    .navbar-links {
-      gap: 1.25rem;
+    .site-nav__brand {
+      font-size: 0.65rem;
     }
 
-    .navbar-link {
-      font-size: 0.75rem;
+    .site-nav__link {
+      font-size: 0.55rem;
     }
 
-    .hero-subtitle {
-      padding: 5rem 1rem 1rem;
-      margin-right: 1rem;
-      max-width: none;
+    .site-nav__comma {
+      font-size: 0.55rem;
+      margin: 0 0.1rem;
     }
 
-    .subtitle-word {
-      font-size: 0.875rem;
+    .hero {
+      padding: 1.5rem;
+      padding-bottom: 2rem;
     }
 
-    /* Stack vertically on mobile */
-    .hero-grid {
-      grid-template-columns: 1fr;
-      grid-template-rows: 2fr 1fr;
+    .hero__portrait {
+      top: 35%;
+      width: 45vw;
+      max-width: 180px;
     }
 
-    .hero-right-column {
-      flex-direction: row;
+    .hero__title {
+      font-size: clamp(2.5rem, 15vw, 5rem);
     }
 
-    .hero-box-right-top,
-    .hero-box-right-bottom {
-      flex: 1;
+    .books-section {
+      height: 200px;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .site-nav__links {
+      gap: 0.15rem;
+    }
+
+    .site-nav__link {
+      font-size: 0.5rem;
+      letter-spacing: 0.08em;
+    }
+
+    .hero__portrait {
+      top: 32%;
+      width: 50vw;
+      max-width: 160px;
+    }
+
+    .hero__title {
+      font-size: clamp(2rem, 16vw, 4rem);
+      letter-spacing: -0.02em;
+    }
+
+    .books-section {
+      height: 150px;
     }
   }
 </style>
-
-<script>
-  // Hide scroll indicator on scroll
-  document.addEventListener('scroll', () => {
-    const indicator = document.querySelector('[data-scroll-indicator]');
-    if (indicator && window.scrollY > 100) {
-      indicator.classList.add('hidden');
-    }
-  }, { passive: true });
-</script>

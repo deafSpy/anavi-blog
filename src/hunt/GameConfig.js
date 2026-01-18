@@ -24,7 +24,7 @@
 // ============================================
 // DEBUG MODE - Set to true to bypass Konami code
 // ============================================
-export const DEBUG_MODE = false;
+export const DEBUG_MODE = true;
 
 // ============================================
 // CUSTOM KONAMI CODE
@@ -43,12 +43,12 @@ export const huntStages = [
   {
     id: 1,
     type: 'puzzle',
-    prompt: "✧ Welcome, lover ✧",
-    subtext: "To begin this journey, enter the date we first met (DDMMYYYY)",
+    prompt: "✧ Welcome, Anavi ✧",
+    subtext: "To begin this journey, enter the date we started dating (DDMMYYYY)",
     inputType: 'numeric',
     answer: "23012021",
     inputPlaceholder: "DDMMYYYY",
-    hint: "Think back to that beautiful January day in 2021...",
+    hint: "Oh come on, you know it...",
     memories: [
       { image: '/anniversary/memories/phase1/pic1.jpg' },
       { image: '/anniversary/memories/phase1/pic2.jpg' },
@@ -56,7 +56,7 @@ export const huntStages = [
       { image: '/anniversary/memories/phase1/pic4.jpg' },
       { image: '/anniversary/memories/phase1/pic5.jpg' },
     ],
-    successMessage: "You remembered ♡"
+    // successMessage: "You remembered ♡"
   },
 
   // ──────────────────────────────────────────
@@ -138,10 +138,10 @@ export const huntStages = [
     inputType: 'text',
     answer: "watch",
     inputPlaceholder: "what should you do?",
-    hint: "The fragments show video links... what action do you take with videos?",
+    hint: "click on the links :)",
     linkFragments: [
-      'youtu.be/secret...',
-      'youtube.com/watch?v=...',
+      'inspect',
+      'element',
       'hidden-message.mp4',
       'anniversary-video...'
     ],

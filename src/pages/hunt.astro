@@ -1,0 +1,40 @@
+---
+/**
+ * /hunt - Dedicated Treasure Hunt Page
+ * Automatically scans /public/hunt/music for MP3 files at build time
+ */
+import BaseLayout from '../layouts/BaseLayout.astro';
+import HuntOverlay from '../hunt/HuntOverlay.astro';
+import fs from 'node:fs';
+import path from 'node:path';
+
+// Scan music folder at build time
+const musicDir = path.join(process.cwd(), 'public/hunt/music');
+let musicFiles: string[] = [];
+
+try {
+  if (fs.existsSync(musicDir)) {
+    musicFiles = fs.readdirSync(musicDir)
+      .filter(file => /\.(mp3|wav|ogg|m4a)$/i.test(file))
+      .map(file => `/hunt/music/${file}`);
+  }
+} catch (e) {
+  console.log('Could not scan music folder:', e);
+}
+---
+
+<BaseLayout title="Treasure Hunt ♡" description="A special journey for you" isHuntPage={true}>
+  <HuntOverlay musicFiles={musicFiles} />
+</BaseLayout>
+
+<style>
+  /* Override body styles for hunt page */
+  :global(body) {
+    overflow: hidden;
+    background: #1a1418;
+  }
+  
+  :global(main) {
+    min-height: unset;
+  }
+</style>

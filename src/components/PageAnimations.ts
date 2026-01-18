@@ -5,9 +5,14 @@
  */
 
 import gsap from 'gsap';
+import { CustomEase } from "gsap/CustomEase";
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
+import { GPUSamplerBindingType } from 'three/src/renderers/webgpu/utils/WebGPUConstants.js';
 
+gsap.registerPlugin(CustomEase);
 gsap.registerPlugin(ScrollTrigger);
+
+CustomEase.create("myCustomEase", "0.84, 0, 0.16, 1");
 
 const getReducedMotion = () =>
   typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -37,30 +42,20 @@ export function playLoadingOverlayAnimation(): Promise<void> {
     
     if (logoChars.length > 0) {
       // Animate each character with 3D flip
-      gsap.to(logoChars, {
-        y: '0%',
-        rotateX: 0,
-        opacity: 1,
-        duration: 0.8,
-        stagger: 0.06,
-        ease: 'power3.out',
-        onComplete: () => {
-          gsap.to(overlay, {
-            delay: 0.3,
-            y: '-100%',
-            duration: 0.9,
-            ease: 'power3.inOut',
-            onComplete: () => {
-              overlay.style.display = 'none';
-              resolve();
-            },
-          });
-        },
+        gsap.to(logoChars, {
+            y: '0%',
+            rotateX: 0,
+            opacity: 1,
+            duration: 0.8,
+            stagger: 0.02,
+            ease: 'cubic-bezier(0.84, 0, 0.16, 1)'
+        });
+      gsap.to(overlay, {
+          delay: 1.1,
+          y: '-100%',
+          duration: 0.9,
+          ease: 'myCustomEase'
       });
-    } else {
-      // No logo chars and not handled by FallingLetters - just hide
-      overlay.style.display = 'none';
-      resolve();
     }
   });
 }

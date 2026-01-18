@@ -4,10 +4,16 @@
  * Romantic Theme with Combined Puzzle + Memory Lane Stages
  * Uses GSAP for animations and Lenis for smooth scroll
  */
+
+interface Props {
+  musicFiles?: string[];
+}
+
+const { musicFiles = [] } = Astro.props;
 ---
 
 <!-- Hunt Overlay Container -->
-<div id="hunt-overlay" class="hunt-overlay" data-active="false">
+<div id="hunt-overlay" class="hunt-overlay" data-active="false" data-music-files={JSON.stringify(musicFiles)}>
   <!-- Transition Layer with Loading Animation -->
   <div id="transition-layer" class="transition-layer">
     <div class="transition-loader">
@@ -52,6 +58,51 @@
     <!-- Success Message Overlay -->
     <div id="success-overlay" class="success-overlay">
       <div id="success-message" class="success-message"></div>
+    </div>
+    
+    <!-- Music Player (Spotify-style) -->
+    <div id="music-player" class="music-player">
+      <audio id="music-audio"></audio>
+      
+      <!-- Controls -->
+      <div class="music-controls">
+        <button id="music-prev" class="music-btn" aria-label="Previous">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M6 6h2v12H6zm3.5 6l8.5 6V6z"/>
+          </svg>
+        </button>
+        
+        <button id="music-toggle" class="music-btn music-play-btn" aria-label="Play/Pause">
+          <svg class="icon-play" width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M8 5v14l11-7z"/>
+          </svg>
+          <svg class="icon-pause" width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>
+          </svg>
+        </button>
+        
+        <button id="music-next" class="music-btn" aria-label="Next">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/>
+          </svg>
+        </button>
+      </div>
+      
+      <!-- Track Info & Progress -->
+      <div class="music-track">
+        <span id="music-title" class="music-title">♪</span>
+        <div class="music-progress">
+          <div id="music-progress-fill" class="music-progress-fill"></div>
+        </div>
+      </div>
+      
+      <!-- Volume -->
+      <div class="music-volume-wrap">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" opacity="0.6">
+          <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02z"/>
+        </svg>
+        <input type="range" id="music-volume" class="music-volume" min="0" max="1" step="0.1" value="0.5" />
+      </div>
     </div>
   </div>
 </div>
@@ -311,11 +362,185 @@
     );
     z-index: 50;
   }
+
+  /* ============================================
+     Music Player (Spotify-style)
+     ============================================ */
+  .music-player {
+    position: fixed;
+    bottom: 1.25rem;
+    right: 1.25rem;
+    z-index: 200;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.5rem 0.875rem;
+    background: rgba(18, 14, 16, 0.95);
+    backdrop-filter: blur(16px);
+    border: 1px solid rgba(212, 165, 217, 0.15);
+    border-radius: 8px;
+    opacity: 0;
+    transform: translateY(10px);
+    transition: all 0.3s ease;
+    pointer-events: none;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+  }
+
+  .music-player.visible {
+    opacity: 1;
+    transform: translateY(0);
+    pointer-events: auto;
+  }
+
+  .music-controls {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+  }
+
+  .music-btn {
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    border: none;
+    color: rgba(255, 255, 255, 0.7);
+    cursor: pointer;
+    transition: all 0.15s ease;
+    border-radius: 50%;
+  }
+
+  .music-btn:hover {
+    color: white;
+    transform: scale(1.1);
+  }
+
+  .music-play-btn {
+    width: 28px;
+    height: 28px;
+    background: white;
+    color: #121212;
+  }
+
+  .music-play-btn:hover {
+    transform: scale(1.05);
+    color: #121212;
+  }
+
+  .music-player .icon-play,
+  .music-player .icon-pause {
+    display: none;
+  }
+
+  .music-player:not(.playing) .icon-play {
+    display: block;
+  }
+
+  .music-player.playing .icon-pause {
+    display: block;
+  }
+
+  .music-track {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 100px;
+    max-width: 140px;
+  }
+
+  .music-title {
+    font-size: 0.7rem;
+    font-weight: 500;
+    color: white;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    letter-spacing: 0.01em;
+  }
+
+  .music-progress {
+    width: 100%;
+    height: 3px;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 3px;
+    overflow: hidden;
+    cursor: pointer;
+  }
+
+  .music-progress-fill {
+    height: 100%;
+    width: 0%;
+    background: var(--hunt-primary, #d4a5d9);
+    border-radius: 3px;
+    transition: width 0.1s linear;
+  }
+
+  .music-volume-wrap {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    color: rgba(255, 255, 255, 0.6);
+  }
+
+  .music-volume {
+    width: 50px;
+    height: 3px;
+    -webkit-appearance: none;
+    appearance: none;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 3px;
+    cursor: pointer;
+  }
+
+  .music-volume::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 10px;
+    height: 10px;
+    background: white;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: transform 0.1s;
+  }
+
+  .music-volume::-webkit-slider-thumb:hover {
+    transform: scale(1.2);
+  }
+
+  .music-volume::-moz-range-thumb {
+    width: 10px;
+    height: 10px;
+    background: white;
+    border: none;
+    border-radius: 50%;
+    cursor: pointer;
+  }
+
+  @media (max-width: 640px) {
+    .music-player {
+      bottom: 0.75rem;
+      right: 0.75rem;
+      left: 0.75rem;
+      border-radius: 6px;
+    }
+    
+    .music-track {
+      flex: 1;
+      max-width: none;
+    }
+    
+    .music-volume-wrap {
+      display: none;
+    }
+  }
 </style>
 
 <script>
   import { gsap } from 'gsap';
   import { huntStages, DEBUG_MODE, KONAMI_SEQUENCE } from './GameConfig.js';
+  import { playCipherAnimation } from '../components/CipherGlitch';
+  import { initImageTrail, startTrail, stopTrail, destroyImageTrail } from '../components/ImageTrail';
 
   // ============================================
   // Hunt Engine State
@@ -342,6 +567,22 @@
   const resetBtn = document.getElementById('hunt-reset');
   const navPrev = document.getElementById('nav-prev');
   const navNext = document.getElementById('nav-next');
+  
+  // Music Player Elements
+  const musicPlayer = document.getElementById('music-player');
+  const musicAudio = document.getElementById('music-audio') as HTMLAudioElement;
+  const musicToggle = document.getElementById('music-toggle');
+  const musicPrev = document.getElementById('music-prev');
+  const musicNext = document.getElementById('music-next');
+  const musicTitle = document.getElementById('music-title');
+  const musicProgressFill = document.getElementById('music-progress-fill');
+  const musicVolume = document.getElementById('music-volume') as HTMLInputElement;
+  
+  // Music playlist state
+  let musicPlaylist: string[] = [];
+  let musicTitles: string[] = [];
+  let currentTrackIndex = 0;
+  let musicIsPlaying = false;
 
   // ============================================
   // Konami Code Detection
@@ -372,6 +613,147 @@
   }
 
   // ============================================
+  // Music Player Functions
+  // ============================================
+  function initMusicPlayer() {
+    if (!musicAudio || !musicToggle || !musicVolume) return;
+    
+    // Set initial volume
+    musicAudio.volume = parseFloat(musicVolume.value);
+    
+    // Toggle play/pause
+    musicToggle.addEventListener('click', () => {
+      if (musicAudio.paused) {
+        musicAudio.play().catch(() => {});
+        musicPlayer?.classList.add('playing');
+        musicIsPlaying = true;
+      } else {
+        musicAudio.pause();
+        musicPlayer?.classList.remove('playing');
+        musicIsPlaying = false;
+      }
+    });
+    
+    // Previous track
+    musicPrev?.addEventListener('click', () => {
+      if (musicPlaylist.length === 0) return;
+      currentTrackIndex = (currentTrackIndex - 1 + musicPlaylist.length) % musicPlaylist.length;
+      loadTrack(currentTrackIndex);
+      if (musicIsPlaying) musicAudio.play().catch(() => {});
+    });
+    
+    // Next track
+    musicNext?.addEventListener('click', () => {
+      if (musicPlaylist.length === 0) return;
+      currentTrackIndex = (currentTrackIndex + 1) % musicPlaylist.length;
+      loadTrack(currentTrackIndex);
+      if (musicIsPlaying) musicAudio.play().catch(() => {});
+    });
+    
+    // Volume control
+    musicVolume.addEventListener('input', () => {
+      musicAudio.volume = parseFloat(musicVolume.value);
+    });
+    
+    // Update progress bar
+    musicAudio.addEventListener('timeupdate', () => {
+      if (musicProgressFill && musicAudio.duration) {
+        const progress = (musicAudio.currentTime / musicAudio.duration) * 100;
+        musicProgressFill.style.width = `${progress}%`;
+      }
+    });
+    
+    // Auto-play next track when current ends
+    musicAudio.addEventListener('ended', () => {
+      if (musicPlaylist.length === 0) return;
+      currentTrackIndex = (currentTrackIndex + 1) % musicPlaylist.length;
+      loadTrack(currentTrackIndex);
+      musicAudio.play().catch(() => {});
+    });
+  }
+  
+  function loadTrack(index: number) {
+    if (!musicAudio || !musicTitle || musicPlaylist.length === 0) return;
+    
+    musicAudio.src = musicPlaylist[index];
+    musicAudio.load();
+    musicTitle.textContent = musicTitles[index] || `Track ${index + 1}`;
+    if (musicProgressFill) musicProgressFill.style.width = '0%';
+  }
+  
+  // Shuffle array helper
+  function shuffleArray<T>(array: T[]): T[] {
+    const shuffled = [...array];
+    for (let i = shuffled.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
+    return shuffled;
+  }
+  
+  // Extract readable title from filename
+  function getTitleFromPath(path: string): string {
+    const filename = path.split('/').pop() || '';
+    // Remove extension and replace underscores/dashes with spaces
+    return filename
+      .replace(/\.(mp3|wav|ogg|m4a)$/i, '')
+      .replace(/[-_]/g, ' ')
+      .replace(/\b\w/g, c => c.toUpperCase()); // Title case
+  }
+  
+  // Load music from folder (uses predefined list since browser can't read directories)
+  async function loadMusicFromFolder(folderPath: string) {
+    // Since browsers can't list directory contents, we need a manifest
+    // Try to fetch a music.json file that lists the songs
+    try {
+      const response = await fetch(`${folderPath}/music.json`);
+      if (response.ok) {
+        const data = await response.json();
+        const songs = data.songs.map((s: string) => `${folderPath}/${s}`);
+        const titles = songs.map((s: string) => getTitleFromPath(s));
+        
+        // Shuffle and start
+        const indices = shuffleArray([...Array(songs.length).keys()]);
+        musicPlaylist = indices.map((i: number) => songs[i]);
+        musicTitles = indices.map((i: number) => titles[i]);
+        currentTrackIndex = 0;
+        
+        if (musicPlaylist.length > 0 && musicPlayer) {
+          loadTrack(0);
+          musicPlayer.classList.add('visible');
+        }
+      } else {
+        console.log('No music.json found. Create one with: { "songs": ["song1.mp3", "song2.mp3"] }');
+      }
+    } catch (e) {
+      console.log('Music folder not configured. Add music.json to', folderPath);
+    }
+  }
+  
+  function startMusicPlaylist(songs: string[], titles?: string[]) {
+    // Shuffle the songs
+    const indices = shuffleArray([...Array(songs.length).keys()]);
+    musicPlaylist = indices.map(i => songs[i]);
+    musicTitles = titles 
+      ? indices.map(i => titles[i]) 
+      : indices.map(i => getTitleFromPath(songs[i]));
+    currentTrackIndex = 0;
+    
+    if (musicPlaylist.length > 0 && musicPlayer) {
+      loadTrack(0);
+      musicPlayer.classList.add('visible');
+    }
+  }
+  
+  function stopMusic() {
+    if (!musicAudio || !musicPlayer) return;
+    musicAudio.pause();
+    musicAudio.currentTime = 0;
+    musicPlayer.classList.remove('visible', 'playing');
+    musicIsPlaying = false;
+  }
+
+  // ============================================
   // Transition Animation
   // ============================================
   function playTransition() {
@@ -392,6 +774,9 @@
   // Hunt Activation
   // ============================================
   async function activateHunt() {
+    // Play mysterious cipher animation BEFORE showing hunt
+    await playCipherAnimation();
+    
     await playTransition();
     
     if (overlay) overlay.setAttribute('data-active', 'true');
@@ -401,9 +786,19 @@
     renderCurrentStage();
     updateProgress();
     updateNavigation();
+    
+    // Initialize image trail for completed puzzles
+    await initImageTrail('stage-container');
   }
 
   function deactivateHunt() {
+    // Stop and destroy image trail
+    stopTrail();
+    destroyImageTrail();
+    
+    // Stop music
+    stopMusic();
+    
     if (overlay) overlay.setAttribute('data-active', 'false');
     isActive = false;
     if (stageContainer) stageContainer.innerHTML = '';
@@ -537,6 +932,16 @@
     if (lenisInstance) {
       lenisInstance.destroy();
       lenisInstance = null;
+    }
+    
+    // Check if current stage is solved (for image trail)
+    const isStageSolved = solvedStages.has(currentStageIndex);
+    
+    // Start trail on completed puzzles, stop on unsolved
+    if (isStageSolved && stage.type === 'puzzle') {
+      startTrail();
+    } else {
+      stopTrail();
     }
 
     switch (stage.type) {
@@ -714,11 +1119,20 @@
         const userAnswer = stage.inputType === 'text'
           ? input.value.toLowerCase().trim()
           : input.value.trim();
-        const correctAnswer = stage.inputType === 'text'
-          ? stage.answer.toLowerCase().trim()
-          : stage.answer.trim();
+        
+        // Support multiple correct answers (array or single string)
+        const correctAnswers = Array.isArray(stage.answer) 
+          ? stage.answer 
+          : [stage.answer];
+        
+        const isCorrect = correctAnswers.some(ans => {
+          const normalizedAns = stage.inputType === 'text' 
+            ? ans.toLowerCase().trim() 
+            : ans.trim();
+          return userAnswer === normalizedAns;
+        });
 
-        if (userAnswer === correctAnswer) {
+        if (isCorrect) {
           // Mark as solved
           solvedStages.add(currentStageIndex);
           saveProgress();
@@ -1280,14 +1694,54 @@
       // Re-query elements to ensure they exist
       const overlay = document.getElementById('hunt-overlay');
       if (!overlay) return;
+      
+      // Initialize music player controls
+      initMusicPlayer();
 
-      if (DEBUG_MODE) {
-        activateHunt();
+      // Check if we're on the dedicated /hunt page (auto-activate)
+      const isHuntPage = window.location.pathname === '/hunt' || window.location.pathname === '/hunt/';
+      
+      if (isHuntPage || DEBUG_MODE) {
+        // Skip cipher animation since it played before redirect
+        activateHuntDirect();
       } else {
+        // Main page - use Konami listener (handled by KonamiTrigger.ts instead)
         initKonamiListener();
       }
+      
+      // Listen for custom activation event from hunt.astro
+      window.addEventListener('activateHunt', () => {
+        activateHuntDirect();
+      });
     } catch (e) {
       console.warn('HuntOverlay init failed:', e);
+    }
+  }
+  
+  // Direct activation without cipher animation (already played)
+  async function activateHuntDirect() {
+    if (overlay) overlay.setAttribute('data-active', 'true');
+    isActive = true;
+    
+    loadProgress();
+    renderCurrentStage();
+    updateProgress();
+    updateNavigation();
+    
+    // Initialize image trail for completed puzzles
+    await initImageTrail('stage-container');
+    
+    // Load music from pre-scanned list (embedded at build time)
+    const musicFilesAttr = overlay?.getAttribute('data-music-files');
+    if (musicFilesAttr) {
+      try {
+        const songs = JSON.parse(musicFilesAttr) as string[];
+        if (songs.length > 0) {
+          startMusicPlaylist(songs);
+        }
+      } catch (e) {
+        console.log('Could not parse music files');
+      }
     }
   }
 
