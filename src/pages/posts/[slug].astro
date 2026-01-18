@@ -25,21 +25,28 @@ const { post } = Astro.props as { post: BlogPost };
   <div class="reading-progress-bar" id="reading-progress"></div>
 
   <!-- ============================================
-       NAVBAR - Same as main page
+       NAVBAR - Same style as main page
        ============================================ -->
-  <nav
-    class="nav-glass fixed top-4 left-1/2 -translate-x-1/2 z-50 flex items-center gap-8 rounded-full px-6 py-3"
-    data-navbar
-  >
-    <a href="/" class="flex items-center gap-2">
-      <span class="text-lg font-bold tracking-tight text-stone-900">Anavi</span>
+  <nav class="site-nav" data-navbar>
+    <a href="/" class="site-nav__brand" data-nav-brand>
+      ANAVI DASGUPTA
     </a>
     
-    <div class="nav-links flex items-center gap-1">
-      <div class="nav-pill"></div>
-      <a class="nav-link nav-link-active" href="/posts">Blog</a>
-      <a class="nav-link" href="/#about">About</a>
-      <a class="nav-link" href="/#contact">Contact</a>
+    <div class="site-nav__links" data-nav-links>
+      <a href="/#work" class="site-nav__link" data-nav-link="work">
+        WORK
+        <span class="site-nav__underline"></span>
+      </a>
+      <span class="site-nav__comma">,</span>
+      <a href="/posts" class="site-nav__link site-nav__link--active" data-nav-link="blog">
+        BLOG
+        <span class="site-nav__underline"></span>
+      </a>
+      <span class="site-nav__comma">,</span>
+      <a href="/#contact" class="site-nav__link" data-nav-link="contact">
+        CONTACT
+        <span class="site-nav__underline"></span>
+      </a>
     </div>
   </nav>
 
@@ -165,9 +172,83 @@ const { post } = Astro.props as { post: BlogPost };
     }
   }
 
-  /* Navbar active state */
-  .nav-link-active {
-    color: var(--text-primary, #0c0a09);
+  /* ============================================
+     NAVBAR - Same as main page
+     ============================================ */
+  .site-nav {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 9999;
+    padding: 1.5rem 2.5rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    background: transparent;
+    mix-blend-mode: difference;
+    isolation: isolate;
+  }
+
+  .site-nav__brand {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    font-size: 0.75rem;
+    font-weight: 500;
+    letter-spacing: 0.15em;
+    color: white;
+    text-decoration: none;
+    transition: opacity 0.3s ease;
+  }
+
+  .site-nav__brand:hover {
+    opacity: 0.6;
+  }
+
+  .site-nav__links {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 0.25rem;
+  }
+
+  .site-nav__comma {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    font-size: 0.7rem;
+    font-weight: 500;
+    color: white;
+    margin: 0 0.15rem;
+  }
+
+  .site-nav__link {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    font-size: 0.7rem;
+    font-weight: 500;
+    letter-spacing: 0.12em;
+    color: white;
+    text-decoration: none;
+    text-transform: uppercase;
+    padding: 0.15rem 0;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .site-nav__underline {
+    display: block;
+    width: 100%;
+    height: 1px;
+    background: white;
+    transform: scaleX(0);
+    transform-origin: center;
+  }
+
+  .site-nav__link:hover .site-nav__underline {
+    transform: scaleX(1);
+  }
+
+  .site-nav__link--active .site-nav__underline {
+    transform: scaleX(1);
   }
 
   /* Breadcrumb */
@@ -237,6 +318,52 @@ const { post } = Astro.props as { post: BlogPost };
     height: auto;
     border-radius: 0.75rem;
   }
+
+  /* ============================================
+     MOBILE RESPONSIVE - Blog Content
+     ============================================ */
+  @media (max-width: 768px) {
+    .post-article {
+      padding-left: 1rem;
+      padding-right: 1rem;
+    }
+
+    .post-content :global(p) {
+      font-size: 1rem;
+      line-height: 1.7;
+      margin-bottom: 1.25rem;
+      /* Ensure proper text flow on mobile */
+      word-break: break-word;
+      overflow-wrap: break-word;
+      hyphens: auto;
+    }
+
+    .post-content :global(h1) {
+      font-size: 1.75rem;
+    }
+
+    .post-content :global(h2) {
+      font-size: 1.5rem;
+      margin-top: 2rem;
+    }
+
+    .post-content :global(h3) {
+      font-size: 1.25rem;
+      margin-top: 1.5rem;
+    }
+
+    .post-content :global(ul),
+    .post-content :global(ol) {
+      padding-left: 1.25rem;
+    }
+
+    .post-content :global(blockquote) {
+      padding-left: 1rem;
+      margin-left: 0;
+      margin-right: 0;
+    }
+  }
+
 </style>
 
 <script>

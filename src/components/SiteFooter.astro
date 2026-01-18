@@ -3,33 +3,20 @@ const year = new Date().getFullYear();
 ---
 
 <!-- 
-  Sticky Footer with Clip-Path Reveal Effect
-  Uses clip-path on outer container and sticky positioning inside
+  Simple Black Footer
+  Clean, minimal dark theme
 -->
 <div class="footer-wrapper" id="contact">
   <div class="footer-sticky-container">
     <footer class="footer-content">
-      <!-- Animated grid background -->
-      <div class="footer-grid" aria-hidden="true"></div>
-      
-      <!-- Floating gradient orbs -->
-      <div class="footer-orb footer-orb-1" aria-hidden="true"></div>
-      <div class="footer-orb footer-orb-2" aria-hidden="true"></div>
-      <div class="footer-orb footer-orb-3" aria-hidden="true"></div>
-
-      <div class="relative mx-auto max-w-7xl px-6 py-24 md:px-8 md:py-40">
-        <!-- Large artistic name -->
-        <div class="mb-12">
-          <h2 class="footer-title">Anavi Dasgupta</h2>
-        </div>
-
+      <div class="footer-inner">
         <!-- Tagline -->
-        <p class="text-xl md:text-2xl text-stone-400 max-w-xl mb-16">
-          Purpose-led designer crafting meaningful digital experiences.
+        <p class="text-xl md:text-2xl text-neutral-400 max-w-xl mb-16">
+          I like to read and write
         </p>
 
         <!-- Contact Links -->
-        <div class="footer-links flex flex-wrap gap-4">
+        <div class="footer-links flex flex-wrap gap-4 mb-16">
           <a 
             href="mailto:anavidasguptalis@gmail.com" 
             class="footer-link"
@@ -41,7 +28,7 @@ const year = new Date().getFullYear();
           </a>
           
           <a 
-            href="https://linkedin.com/in/anavi" 
+            href="https://www.linkedin.com/in/anavi-dasgupta-b6749623a" 
             target="_blank"
             rel="noopener noreferrer"
             class="footer-link"
@@ -53,10 +40,10 @@ const year = new Date().getFullYear();
           </a>
         </div>
 
-        <!-- Copyright -->
-        <p class="mt-16 text-sm text-stone-600">
-          © {year} Anavi Dasgupta
-        </p>
+        <!-- Large artistic name at bottom -->
+        <div class="footer-title-wrapper">
+          <h2 class="footer-title">Anavi Dasgupta</h2>
+        </div>
       </div>
     </footer>
   </div>
@@ -64,7 +51,7 @@ const year = new Date().getFullYear();
 
 <style>
   /* ============================================
-     STICKY FOOTER WITH CLIP-PATH REVEAL
+     SIMPLE BLACK FOOTER
      ============================================ */
   .footer-wrapper {
     position: relative;
@@ -83,91 +70,47 @@ const year = new Date().getFullYear();
     top: calc(100vh - 800px);
     height: 800px;
     overflow: hidden;
-    background: linear-gradient(180deg, #1c1917 0%, #0c0a09 100%);
+    /* Clean black background */
+    background: #0a0a0a;
     color: white;
   }
 
-  /* ============================================
-     ANIMATED DOT GRID BACKGROUND
-     ============================================ */
-  .footer-grid {
-    position: absolute;
-    inset: 0;
-    background-image: radial-gradient(circle at center, rgba(255,255,255,0.03) 1px, transparent 1px);
-    background-size: 40px 40px;
-    animation: gridPulse 8s ease-in-out infinite;
-  }
-
-  @keyframes gridPulse {
-    0%, 100% { opacity: 0.3; }
-    50% { opacity: 0.6; }
+  .footer-inner {
+    position: relative;
+    height: 100%;
+    max-width: 80rem;
+    margin: 0 auto;
+    padding: 4rem 2rem 0 2rem; /* No bottom padding */
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
   }
 
   /* ============================================
-     FLOATING GRADIENT ORBS
+     TITLE STYLING
      ============================================ */
-  .footer-orb {
-    position: absolute;
-    border-radius: 50%;
-    filter: blur(80px);
-    pointer-events: none;
+  .footer-title-wrapper {
+    position: relative;
+    display: block;
+    width: 100%;
+    margin-bottom: 0; /* Touch the bottom */
+    padding-bottom: 0;
   }
 
-  .footer-orb-1 {
-    width: 400px;
-    height: 400px;
-    background: radial-gradient(circle, rgba(249, 115, 22, 0.15) 0%, transparent 70%);
-    top: -100px;
-    right: -100px;
-    animation: floatOrb1 20s ease-in-out infinite;
-  }
-
-  .footer-orb-2 {
-    width: 300px;
-    height: 300px;
-    background: radial-gradient(circle, rgba(14, 165, 233, 0.1) 0%, transparent 70%);
-    bottom: -50px;
-    left: 10%;
-    animation: floatOrb2 25s ease-in-out infinite;
-  }
-
-  .footer-orb-3 {
-    width: 250px;
-    height: 250px;
-    background: radial-gradient(circle, rgba(168, 162, 158, 0.1) 0%, transparent 70%);
-    top: 40%;
-    left: 50%;
-    animation: floatOrb3 18s ease-in-out infinite;
-  }
-
-  @keyframes floatOrb1 {
-    0%, 100% { transform: translate(0, 0) scale(1); }
-    33% { transform: translate(-30px, 20px) scale(1.1); }
-    66% { transform: translate(20px, -15px) scale(0.95); }
-  }
-
-  @keyframes floatOrb2 {
-    0%, 100% { transform: translate(0, 0) scale(1); }
-    50% { transform: translate(40px, -30px) scale(1.15); }
-  }
-
-  @keyframes floatOrb3 {
-    0%, 100% { transform: translate(0, 0) scale(1); }
-    25% { transform: translate(-20px, 25px) scale(1.05); }
-    75% { transform: translate(25px, -20px) scale(0.9); }
-  }
-
-  /* ============================================
-     TYPOGRAPHY
-     ============================================ */
   .footer-title {
-    font-size: clamp(3rem, 10vw, 8rem);
+    font-size: clamp(4rem, 15vw, 12rem); /* Larger font size */
     font-weight: 800;
     letter-spacing: -0.03em;
-    line-height: 1.1;
-    padding-bottom: 0.1em;
-    color: #ffffff;
-    background: linear-gradient(135deg, #ffffff 0%, #d6d3d1 50%, #ffffff 100%);
+    line-height: 0.9; /* Tighter line height */
+    margin-bottom: 0.0em; /* Pull down to touch bottom edge */
+    padding-bottom: 0.2em;
+    /* Subtle gradient text */
+    background: linear-gradient(
+      135deg, 
+      #ffffff 0%, 
+      #e5e5e5 50%,
+      #ffffff 100%
+    );
     background-size: 200% 200%;
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
@@ -189,27 +132,27 @@ const year = new Date().getFullYear();
   }
 
   /* ============================================
-     CONTACT LINKS
+     CONTACT LINKS - Clean style
      ============================================ */
   .footer-link {
     display: inline-flex;
     align-items: center;
     gap: 0.625rem;
     padding: 0.875rem 1.5rem;
-    background: rgba(255, 255, 255, 0.03);
+    background: rgba(255, 255, 255, 0.05);
     backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.1);
     border-radius: 9999px;
     font-size: 0.875rem;
     font-weight: 500;
-    color: #a8a29e;
+    color: #a3a3a3;
     transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
   }
 
   .footer-link:hover {
     background: rgba(255, 255, 255, 0.1);
     border-color: rgba(255, 255, 255, 0.2);
-    color: white;
+    color: #ffffff;
     transform: translateY(-3px);
     box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.5);
   }

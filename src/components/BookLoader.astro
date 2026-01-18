@@ -1,0 +1,164 @@
+---
+/**
+ * BookLoader - Loading animation placeholder
+ * Displays a book flip animation while page loads
+ * The actual GIF animation will be provided separately
+ */
+interface Props {
+  /** Optional custom loading text */
+  loadingText?: string;
+}
+
+const { loadingText = '' } = Astro.props;
+---
+
+<div id="book-loader" class="book-loader" aria-label="Loading">
+  <div class="book-loader__content">
+    <!-- Book animation container - replace inner content with GIF when provided -->
+    <div class="book-loader__book" data-book-animation>
+      <!-- Placeholder book structure -->
+      <div class="book-loader__spine"></div>
+      <div class="book-loader__page book-loader__page--left"></div>
+      <div class="book-loader__page book-loader__page--right">
+        <div class="book-loader__page-flip"></div>
+      </div>
+      
+      <!-- GIF placeholder - uncomment and add src when GIF is ready -->
+      <!-- <img src="/path/to/book-flip.gif" alt="" class="book-loader__gif" /> -->
+    </div>
+    
+    {loadingText && (
+      <p class="book-loader__text">{loadingText}</p>
+    )}
+  </div>
+</div>
+
+<style>
+  .book-loader {
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    background: #fafafa;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 1;
+    transition: opacity 0.5s ease, visibility 0.5s ease;
+  }
+
+  .book-loader.hidden {
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+  }
+
+  .book-loader__content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2rem;
+  }
+
+  /* Book Structure */
+  .book-loader__book {
+    position: relative;
+    width: 120px;
+    height: 90px;
+    perspective: 600px;
+  }
+
+  .book-loader__spine {
+    position: absolute;
+    left: 50%;
+    top: 0;
+    width: 8px;
+    height: 100%;
+    background: linear-gradient(90deg, #2d2d2d 0%, #4a4a4a 50%, #2d2d2d 100%);
+    transform: translateX(-50%);
+    border-radius: 2px;
+    z-index: 3;
+  }
+
+  .book-loader__page {
+    position: absolute;
+    top: 5px;
+    width: calc(50% - 10px);
+    height: calc(100% - 10px);
+    background: #f5f5f0;
+    border: 1px solid #e0e0e0;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  }
+
+  .book-loader__page--left {
+    left: 6px;
+    border-radius: 2px 0 0 2px;
+    background: linear-gradient(90deg, #eeeeea 0%, #f5f5f0 100%);
+  }
+
+  .book-loader__page--right {
+    right: 6px;
+    border-radius: 0 2px 2px 0;
+    transform-origin: left center;
+    transform-style: preserve-3d;
+  }
+
+  .book-loader__page-flip {
+    position: absolute;
+    inset: 0;
+    background: #f5f5f0;
+    border-radius: 0 2px 2px 0;
+    transform-origin: left center;
+    animation: pageFlip 1.2s ease-in-out infinite;
+    backface-visibility: hidden;
+  }
+
+  .book-loader__page-flip::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(90deg, transparent 0%, rgba(0,0,0,0.05) 100%);
+    border-radius: 0 2px 2px 0;
+  }
+
+  @keyframes pageFlip {
+    0%, 10% {
+      transform: rotateY(0deg);
+    }
+    50% {
+      transform: rotateY(-170deg);
+    }
+    90%, 100% {
+      transform: rotateY(-180deg);
+    }
+  }
+
+  /* Text */
+  .book-loader__text {
+    font-family: 'Inter', sans-serif;
+    font-size: 0.875rem;
+    color: #78716c;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  /* Hidden GIF placeholder style */
+  .book-loader__gif {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+  }
+</style>
+
+<script>
+  // Book loader will be hidden after page loads
+  // The WebGL reveal will handle the transition
+  document.addEventListener('DOMContentLoaded', () => {
+    const loader = document.getElementById('book-loader');
+    if (loader) {
+      // Hide loader after a short delay for smooth transition
+      setTimeout(() => {
+        loader.classList.add('hidden');
+      }, 1500);
+    }
+  });
+</script>

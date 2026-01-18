@@ -46,11 +46,64 @@ interface GoogleDocFile {
 const FOLDER_ID = import.meta.env.GOOGLE_DRIVE_FOLDER_ID || '1F9674HEl0LOYty3mO241oRIWdxWHJS83';
 const IMAGES_DIR = path.join(process.cwd(), 'public/blog/images');
 const CACHE_DIR = path.join(process.cwd(), '.cache/google-docs');
+const POSTS_CACHE_FILE = path.join(CACHE_DIR, 'posts.json');
+
+// Cache duration: 5 minutes for dev, always fresh for production builds
+const CACHE_DURATION_MS = 5 * 60 * 1000; // 5 minutes
+const IS_DEV = import.meta.env.DEV;
 
 console.log('[Google Docs] Configuration loaded:');
 console.log('[Google Docs]   FOLDER_ID:', FOLDER_ID);
 console.log('[Google Docs]   Has GOOGLE_CLIENT_EMAIL:', !!import.meta.env.GOOGLE_CLIENT_EMAIL);
 console.log('[Google Docs]   Has PRIVATE_KEY:', !!import.meta.env.GOOGLE_PRIVATE_KEY);
+console.log('[Google Docs]   Mode:', IS_DEV ? 'DEVELOPMENT (caching enabled)' : 'PRODUCTION');
+
+// ============================================
+// Cache Helpers
+// ============================================
+interface CachedData {
+  posts: BlogPost[];
+  timestamp: number;
+}
+
+function getCachedPosts(): BlogPost[] | null {
+  try {
+    if (!fs.existsSync(POSTS_CACHE_FILE)) {
+      console.log('[Google Docs] No cache file found');
+      return null;
+    }
+
+    const cached: CachedData = JSON.parse(fs.readFileSync(POSTS_CACHE_FILE, 'utf-8'));
+    const age = Date.now() - cached.timestamp;
+    
+    // In dev mode, use cache if fresh (within 5 min)
+    // In production build, always fetch fresh
+    if (IS_DEV && age < CACHE_DURATION_MS) {
+      console.log(`[Google Docs] ✓ Using cached posts (age: ${Math.round(age / 1000)}s)`);
+      return cached.posts;
+    }
+    
+    console.log(`[Google Docs] Cache expired (age: ${Math.round(age / 1000)}s)`);
+    return null;
+  } catch (error) {
+    console.log('[Google Docs] Cache read error:', error);
+    return null;
+  }
+}
+
+function saveCachedPosts(posts: BlogPost[]): void {
+  try {
+    ensureDir(CACHE_DIR);
+    const data: CachedData = {
+      posts,
+      timestamp: Date.now(),
+    };
+    fs.writeFileSync(POSTS_CACHE_FILE, JSON.stringify(data, null, 2));
+    console.log(`[Google Docs] ✓ Cached ${posts.length} posts`);
+  } catch (error) {
+    console.warn('[Google Docs] Cache write error:', error);
+  }
+}
 
 // ============================================
 // Authentication
@@ -179,16 +232,20 @@ function cleanGoogleDocsHtml(html: string): {
   // Add centering class to all images
   cleanHtml = cleanHtml.replace(/<img([^>]*)>/gi, '<img$1 class="blog-image">');
   
-  // Clean up remaining HTML
+  // Clean up remaining HTML - PRESERVE paragraph structure better
   cleanHtml = cleanHtml
     .replace(/<p[^>]*>\s*<\/p>/gi, '') // Remove empty paragraphs
     .replace(/<div[^>]*>\s*<\/div>/gi, '') // Remove empty divs
-    .replace(/<br\s*\/?>\s*<br\s*\/?>/gi, '</p><p>') // Convert double br to paragraphs
-    .replace(/\s+/g, ' ') // Normalize whitespace
+    // Don't convert br tags aggressively - just clean up excessive ones
+    .replace(/(<br\s*\/?>){3,}/gi, '<br><br>') // Max 2 consecutive br tags
+    // Normalize whitespace within text, but preserve structure
+    .replace(/\t/g, ' ') // Replace tabs with spaces
+    .replace(/  +/g, ' ') // Collapse multiple spaces to one
     .trim();
   
   return { content: cleanHtml, firstImage };
 }
+
 
 // ============================================
 // Process Images in Content
@@ -225,9 +282,16 @@ async function processContentImages(content: string, slug: string): Promise<stri
 
 /**
  * Fetch all blog posts from Google Drive folder
+ * Uses file-based caching to avoid refetching on every page load
  */
 export async function fetchAllPosts(): Promise<BlogPost[]> {
   console.log('[Google Docs] fetchAllPosts() called');
+  
+  // Check cache first (only in dev mode)
+  const cached = getCachedPosts();
+  if (cached) {
+    return cached;
+  }
   
   const auth = getAuthClient();
   if (!auth) {
@@ -247,7 +311,7 @@ export async function fetchAllPosts(): Promise<BlogPost[]> {
     const response = await drive.files.list({
       q: query,
       fields: 'files(id, name, createdTime, modifiedTime, mimeType)',
-      orderBy: 'modifiedTime desc',
+      orderBy: 'createdTime desc',
     });
     
     const files = (response.data.files || []) as GoogleDocFile[];
@@ -280,6 +344,10 @@ export async function fetchAllPosts(): Promise<BlogPost[]> {
     }
     
     console.log(`[Google Docs] ✓ Total posts loaded: ${posts.length}`);
+    
+    // Save to cache for next time
+    saveCachedPosts(posts);
+    
     return posts;
   } catch (error: any) {
     console.error('[Google Docs] ❌ Error fetching posts from Google Drive:');

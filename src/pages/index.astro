@@ -1,5 +1,6 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
+import BookLoader from '../components/BookLoader.astro';
 import { fetchAllPosts } from '../lib/google-docs';
 
 const posts = await fetchAllPosts();
@@ -11,11 +12,12 @@ const lastName = "DASGUPTA";
 
 <BaseLayout title="Anavi Dasgupta" description="Purpose-led portfolio and field journal">
   <!-- ============================================
-       ALA-STYLE LOADING OVERLAY (Skip for now per user request)
+       BOOK FLIP LOADING ANIMATION
        ============================================ -->
-  <div id="ala-loader" class="ala-loader" style="display: none;">
-    <!-- Loader content preserved but hidden -->
-  </div>
+  <BookLoader />
+  
+  <!-- WebGL Reveal Container -->
+  <div id="webgl-reveal-container" aria-hidden="true"></div>
 
   <!-- ============================================
        ORIGINAL LOADING OVERLAY (COMMENTED OUT)
@@ -66,10 +68,30 @@ const lastName = "DASGUPTA";
        HERO SECTION - Text at Bottom, Centered
        ============================================ -->
   <section class="hero" id="work">
+    <!-- Background Image with Blur/Darkening Overlay - EXTENDS INTO BLOG SECTION -->
+    <div class="hero__background" aria-hidden="true">
+      <img src="/books/background.png" alt="" class="hero__background-img" />
+      <div class="hero__background-overlay"></div>
+    </div>
+
+    <!-- Decorative SVG Animations -->
+    <div class="hero__decorations" aria-hidden="true">
+      <svg class="hero__deco hero__deco--circle-1" viewBox="0 0 100 100">
+        <circle cx="50" cy="50" r="45" fill="none" stroke="currentColor" stroke-width="1" opacity="0.3"/>
+      </svg>
+      <svg class="hero__deco hero__deco--circle-2" viewBox="0 0 100 100">
+        <circle cx="50" cy="50" r="30" fill="none" stroke="currentColor" stroke-width="1" opacity="0.2"/>
+      </svg>
+      <!-- Arrow pointing DOWN -->
+      <svg class="hero__deco hero__deco--arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+        <path d="M12 5v14M12 19l-5-5M12 19l5-5" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </div>
+
     <!-- Central Portrait -->
     <div class="hero__portrait" data-hero-portrait>
       <div class="hero__portrait-inner">
-        <img src="/anavijaipur.png" alt="Anavi Dasgupta" class="hero__portrait-img" />
+        <img src="/anavi_read.jpg" alt="Anavi Dasgupta" class="hero__portrait-img" />
       </div>
     </div>
 
@@ -80,56 +102,53 @@ const lastName = "DASGUPTA";
         <span class="hero__line" data-hero-line>{lastName}</span>
       </h1>
     </div>
-
-    <!-- Blue glow border effect -->
-    <div class="hero__glow" aria-hidden="true"></div>
   </section>
 
   <!-- ============================================
-       BOOKS SIMULATION SECTION (Matter.js)
-       ============================================ -->
-  <section class="books-section" id="books-simulation">
-    <canvas id="books-canvas"></canvas>
-  </section>
-
-  <!-- ============================================
-       BLOG ROLL SECTION
+       BLOG ROLL SECTION - Long Bar Style
        ============================================ -->
   <section class="blog-section" id="blog">
-    <div class="mx-auto max-w-6xl px-6 md:px-8">
-      <div class="grid gap-12 lg:grid-cols-[0.4fr_1fr] lg:items-start">
-        <div class="space-y-4 lg:sticky lg:top-32" data-blog-header>
-          <p class="text-sm font-medium uppercase tracking-[0.3em] text-stone-500" data-blog-line>Latest</p>
-          <h2 class="text-4xl font-bold text-stone-900" data-blog-line>Blog roll</h2>
-          <p class="text-stone-600" data-blog-line>Field notes, experiments, and reflections.</p>
-        </div>
+    <!-- Interactive Book Stacks - Moved to Blog Section -->
+    <div class="blog-section__books" aria-hidden="true">
+      <img 
+        src="/books/horizontalstack.png" 
+        alt="" 
+        class="blog-section__book blog-section__book--horizontal"
+        data-book-pop
+      />
+      <img 
+        src="/books/verticalstack.png" 
+        alt="" 
+        class="blog-section__book blog-section__book--vertical"
+        data-book-pop
+      />
+    </div>
 
-        <div class="space-y-4" data-stagger>
-          {posts.map((post) => (
-            <a
-              class="blog-card group flex items-start gap-6 p-6 border border-stone-200/60"
-              href={`/posts/${post.slug}`}
-              data-stagger-item
-            >
-              <div class="flex-1 space-y-2">
-                <div class="flex items-center gap-2 text-xs font-medium uppercase tracking-[0.25em] text-stone-500">
-                  <span>{post.metadata?.category ?? 'Notes'}</span>
-                </div>
-                <h3 class="text-xl font-semibold text-stone-900 group-hover:text-orange-600 transition-colors">
-                  {post.title}
-                </h3>
-                <p class="text-sm text-stone-600 line-clamp-2">{post.description}</p>
-              </div>
-              <div class="text-right text-sm text-stone-500 shrink-0">
-                <p class="font-medium">
-                  {new Date(post.publishedAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
-                </p>
-                <p class="mt-2 text-orange-500 opacity-0 group-hover:opacity-100 transition-opacity">→</p>
-              </div>
-            </a>
-          ))}
-        </div>
-      </div>
+    <div class="blog-section__header">
+      <p class="blog-section__label">Latest</p>
+      <h2 class="blog-section__title">Blog roll</h2>
+    </div>
+
+    <div class="blog-list">
+      {posts.map((post) => (
+        <a 
+          href={`/posts/${post.slug}`}
+          class="blog-item"
+          data-blog-item
+        >
+          <div class="blog-item__content">
+            <h3 class="blog-item__title">{post.title}</h3>
+            <span class="blog-item__date">
+              {new Date(post.publishedAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
+            </span>
+          </div>
+          <div class="blog-item__arrow">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <path d="M7 17L17 7M17 7H7M17 7V17" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+        </a>
+      ))}
     </div>
   </section>
 
@@ -147,7 +166,6 @@ const lastName = "DASGUPTA";
       const navLinks = document.querySelectorAll('[data-nav-links] .site-nav__link');
       const heroLines = document.querySelectorAll('[data-hero-line]');
       const heroPortrait = document.querySelector('[data-hero-portrait]');
-      const heroGlow = document.querySelector('.hero__glow');
 
       // Create master timeline
       const tl = gsap.timeline({ delay: 0.3 });
@@ -196,13 +214,6 @@ const lastName = "DASGUPTA";
         },
         0.6
       );
-
-      // Glow border fade in
-      tl.fromTo(heroGlow,
-        { opacity: 0 },
-        { opacity: 1, duration: 1, ease: "power2.out" },
-        0.8
-      );
     }
 
     // Initialize section-based navbar underline tracking
@@ -241,129 +252,57 @@ const lastName = "DASGUPTA";
       setTimeout(init, 100);
     }).catch(() => {});
 
+    // Initialize smooth scroll for navigation links
+    function initSmoothScroll() {
+      const navLinks = document.querySelectorAll('.site-nav__link[href^="#"]');
+      
+      navLinks.forEach(link => {
+        link.addEventListener('click', (e) => {
+          e.preventDefault();
+          const targetId = link.getAttribute('href')?.slice(1);
+          if (!targetId) return;
+          
+          const targetSection = document.getElementById(targetId);
+          if (targetSection) {
+            targetSection.scrollIntoView({ 
+              behavior: 'smooth',
+              block: 'start'
+            });
+          }
+        });
+      });
+    }
+
+    // Initialize WebGL reveal transition
+    async function initWebGLReveal() {
+      try {
+        const { initWebGLReveal } = await import('../components/WebGLReveal');
+        const container = document.getElementById('webgl-reveal-container');
+        if (container) {
+          const reveal = initWebGLReveal(container);
+          if (reveal) {
+            // Start reveal after book loader finishes
+            setTimeout(() => reveal.start(), 1600);
+          }
+        }
+      } catch (e) {
+        console.warn('WebGL reveal not available:', e);
+      }
+    }
+
     // Run animations
     if (document.readyState === 'loading') {
       document.addEventListener('DOMContentLoaded', () => {
         initAnimations();
+        initSmoothScroll();
+        initWebGLReveal();
         setTimeout(initSectionTracking, 500);
-        initBooksSimulation();
       });
     } else {
       initAnimations();
+      initSmoothScroll();
+      initWebGLReveal();
       setTimeout(initSectionTracking, 500);
-      initBooksSimulation();
-    }
-
-    // Matter.js Book Simulation
-    async function initBooksSimulation() {
-      const Matter = await import('matter-js');
-      const { Engine, Render, Runner, Bodies, Composite, Body, Events } = Matter;
-      
-      const canvas = document.getElementById('books-canvas') as HTMLCanvasElement;
-      if (!canvas) return;
-      
-      const section = document.getElementById('books-simulation');
-      if (!section) return;
-
-      // Set canvas size
-      const width = section.offsetWidth;
-      const height = 300;
-      canvas.width = width;
-      canvas.height = height;
-
-      // Create engine
-      const engine = Engine.create({
-        gravity: { x: 0.15, y: 1 } // Slight rightward gravity for toppling effect
-      });
-
-      // Create renderer
-      const render = Render.create({
-        canvas: canvas,
-        engine: engine,
-        options: {
-          width: width,
-          height: height,
-          wireframes: false,
-          background: '#fafafa'
-        }
-      });
-
-      // Ground
-      const ground = Bodies.rectangle(width / 2, height + 25, width + 100, 50, {
-        isStatic: true,
-        render: { fillStyle: '#fafafa' }
-      });
-
-      // Right wall (invisible pusher)
-      const rightWall = Bodies.rectangle(width + 50, height / 2, 100, height, {
-        isStatic: true,
-        render: { fillStyle: 'transparent' }
-      });
-
-      // Create books with varying sizes - tightly packed
-      const books: typeof Bodies.rectangle[] = [];
-      const numBooks = 25; // More books for tighter packing
-      
-      for (let i = 0; i < numBooks; i++) {
-        // Randomly decide if showing spine (thin) or pages (slightly thicker)
-        const isSpine = Math.random() > 0.4; // More spines
-        
-        // Book dimensions - narrower overall
-        const bookHeight = 50 + Math.random() * 45; // 50-95px
-        const bookWidth = isSpine ? (6 + Math.random() * 8) : (12 + Math.random() * 13); // Spine: 6-14px, Pages: 12-25px
-        
-        // Color based on type
-        const spineColors = ['#1a1a1a', '#2d2d2d', '#8b4513', '#654321', '#3d3d3d', '#4a3728'];
-        const pageColors = ['#f5f5dc', '#faf0e6', '#fffdf7', '#fefefa', '#f8f4e3'];
-        const color = isSpine 
-          ? spineColors[Math.floor(Math.random() * spineColors.length)]
-          : pageColors[Math.floor(Math.random() * pageColors.length)];
-        
-        // Position books more tightly - clustered in left/center
-        const x = 30 + (i * (width - 60) / numBooks) + Math.random() * 15;
-        const y = -50 - Math.random() * 150; // Start above canvas
-        
-        const book = Bodies.rectangle(x, y, bookWidth, bookHeight, {
-          friction: 0.95, // High friction
-          frictionStatic: 0.9,
-          frictionAir: 0.01,
-          restitution: 0.05, // Less bouncy
-          density: 0.002,
-          angle: -0.15 + Math.random() * 0.3, // Slight random rotation
-          render: {
-            fillStyle: color,
-            strokeStyle: isSpine ? 'transparent' : '#ddd',
-            lineWidth: isSpine ? 0 : 1
-          }
-        });
-        
-        books.push(book);
-      }
-
-      // Add all bodies
-      Composite.add(engine.world, [ground, rightWall, ...books]);
-
-      // Run simulation
-      Render.run(render);
-      const runner = Runner.create();
-      Runner.run(runner, engine);
-
-      // Apply initial rightward impulse after a delay
-      setTimeout(() => {
-        books.forEach((book, i) => {
-          setTimeout(() => {
-            Body.applyForce(book, book.position, { x: 0.003 + Math.random() * 0.002, y: 0 });
-          }, i * 100);
-        });
-      }, 500);
-
-      // Handle resize
-      window.addEventListener('resize', () => {
-        const newWidth = section.offsetWidth;
-        canvas.width = newWidth;
-        render.options.width = newWidth;
-        Render.setPixelRatio(render, window.devicePixelRatio);
-      });
     }
   </script>
 </BaseLayout>
@@ -377,13 +316,14 @@ const lastName = "DASGUPTA";
     top: 0;
     left: 0;
     right: 0;
-    z-index: 1000;
+    z-index: 9999;
     padding: 1.5rem 2.5rem;
     display: flex;
     justify-content: space-between;
     align-items: flex-start;
     background: transparent;
     mix-blend-mode: difference;
+    isolation: isolate;
   }
 
   .site-nav__brand {
@@ -454,26 +394,104 @@ const lastName = "DASGUPTA";
     position: relative;
     min-height: 100vh;
     width: 100%;
-    background: #fafafa;
+    background: transparent; /* No background - image handles it */
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: flex-end;
     padding: 2rem;
     padding-bottom: 3rem;
+    overflow: visible; /* Allow background to extend beyond */
+  }
+
+  /* Background Image - FULL SIZE, BLEEDS INTO BLOG SECTION */
+  .hero__background {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    /* Extend to cover hero + blog section (use large value) */
+    height: calc(100vh + 600px);
+    z-index: 1; /* Low z-index - content goes on top */
+    pointer-events: none; /* Allow clicks through */
     overflow: visible;
   }
 
-  /* Blue glow border */
-  .hero__glow {
-    position: fixed;
+  .hero__background-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center;
+    /* filter: blur(0px); */
+    transform: scale(1.02);
+  }
+
+  .hero__background-overlay {
+    position: absolute;
     inset: 0;
+    background: linear-gradient(
+      180deg,
+      rgba(250, 250, 250, 0.4) 0%,
+      rgba(250, 250, 250, 0.55) 40%,
+      rgba(250, 250, 250, 0.75) 70%,
+      rgba(245, 245, 240, 0.95) 100%
+    );
+  }
+
+  /* Book stacks are now in .blog-section__books */
+
+  /* Decorative SVGs */
+  .hero__decorations {
+    position: absolute;
+    inset: 0;
+    z-index: 5;
     pointer-events: none;
-    z-index: 50;
-    border: 4px solid rgba(59, 130, 246, 0.5);
-    box-shadow: 
-      inset 0 0 80px rgba(59, 130, 246, 0.1),
-      inset 0 0 200px rgba(59, 130, 246, 0.05);
+    color: #1c1917;
+  }
+
+  .hero__deco {
+    position: absolute;
+    animation: decoFloat 6s ease-in-out infinite;
+  }
+
+  .hero__deco--circle-1 {
+    width: 80px;
+    height: 80px;
+    left: 15%;
+    top: 25%;
+    animation-delay: 0s;
+  }
+
+  .hero__deco--circle-2 {
+    width: 50px;
+    height: 50px;
+    right: 20%;
+    top: 60%;
+    animation-delay: -2s;
+  }
+
+  .hero__deco--arrow {
+    width: 30px;
+    height: 30px;
+    left: 25%;
+    top: 70%;
+    animation-delay: -4s;
+    opacity: 0.4;
+  }
+
+  @keyframes decoFloat {
+    0%, 100% {
+      transform: translate(0, 0) rotate(0deg);
+      opacity: 0.3;
+    }
+    33% {
+      transform: translate(10px, -15px) rotate(5deg);
+      opacity: 0.5;
+    }
+    66% {
+      transform: translate(-5px, 10px) rotate(-3deg);
+      opacity: 0.4;
+    }
   }
 
   /* Portrait */
@@ -484,7 +502,7 @@ const lastName = "DASGUPTA";
     transform: translate(-50%, -50%);
     width: clamp(200px, 25vw, 300px);
     aspect-ratio: 3/4;
-    z-index: 2;
+    z-index: 20;
     overflow: hidden;
     box-shadow: 0 25px 80px rgba(0, 0, 0, 0.15);
     border: 1px solid rgba(0, 0, 0, 0.08);
@@ -505,7 +523,7 @@ const lastName = "DASGUPTA";
   /* Text Container - Positioned at bottom, centered */
   .hero__text-container {
     position: relative;
-    z-index: 1;
+    z-index: 20;
     width: 100%;
     text-align: center;
     padding: 0 1rem;
@@ -535,28 +553,156 @@ const lastName = "DASGUPTA";
   }
 
   /* ============================================
-     BOOKS SIMULATION SECTION
-     ============================================ */
-  .books-section {
-    width: 100%;
-    height: 300px;
-    background: #fafafa;
-    overflow: hidden;
-    position: relative;
-  }
-
-  #books-canvas {
-    width: 100%;
-    height: 100%;
-    display: block;
-  }
-
-  /* ============================================
-     BLOG SECTION
+     BLOG SECTION - Long Bar Style
      ============================================ */
   .blog-section {
-    padding: 6rem 0;
-    background: #fafafa;
+    position: relative;
+    padding: 16rem 2rem 8rem; /* Increased top padding even more */
+    margin-top: 8rem; /* More margin for spacing */
+    background: transparent; /* Let hero background bleed through */
+    z-index: 5; /* Below the hero background */
+  }
+
+  /* Book stacks in blog section */
+  .blog-section__books {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 1;
+    pointer-events: none;
+  }
+
+  .blog-section__book {
+    position: absolute;
+    pointer-events: auto;
+    cursor: pointer;
+    transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), filter 0.3s ease;
+    filter: drop-shadow(0 10px 30px rgba(0, 0, 0, 0.15));
+  }
+
+  .blog-section__book:hover {
+    transform: scale(1.08) translateY(-10px) rotate(-2deg);
+    filter: drop-shadow(0 20px 40px rgba(0, 0, 0, 0.25));
+  }
+
+  .blog-section__book--horizontal {
+    width: clamp(120px, 18vw, 200px);
+    left: 5%;
+    top: 30%;
+    transform: rotate(-5deg);
+  }
+
+  .blog-section__book--horizontal:hover {
+    transform: scale(1.08) translateY(-10px) rotate(-7deg);
+  }
+
+  .blog-section__book--vertical {
+    width: clamp(100px, 15vw, 180px);
+    right: 5%;
+    top: 15%;
+    transform: rotate(8deg);
+  }
+
+  .blog-section__book--vertical:hover {
+    transform: scale(1.08) translateY(-10px) rotate(6deg);
+  }
+
+  .blog-section__header {
+    position: relative;
+    z-index: 2;
+    text-align: center;
+    margin-bottom: 3rem;
+  }
+
+  .blog-section__label {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    font-size: 0.75rem;
+    font-weight: 500;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: #78716c;
+    margin-bottom: 0.5rem;
+  }
+
+  .blog-section__title {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    font-size: clamp(2.5rem, 6vw, 4rem);
+    font-weight: 800;
+    color: #1c1917;
+    margin: 0;
+  }
+
+  .blog-list {
+    position: relative;
+    z-index: 2;
+    max-width: 900px;
+    margin: 0 auto;
+  }
+
+  .blog-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1.75rem 0;
+    border-top: 1px solid rgba(0, 0, 0, 0.12);
+    text-decoration: none;
+    transition: opacity 0.2s ease;
+  }
+
+  .blog-item:last-child {
+    border-bottom: 1px solid rgba(0, 0, 0, 0.12);
+  }
+
+  .blog-item:hover {
+    opacity: 0.7;
+  }
+
+  .blog-item__content {
+    flex: 1;
+  }
+
+  .blog-item__title {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    font-size: clamp(1.25rem, 3vw, 2rem);
+    font-weight: 500;
+    color: #1c1917;
+    margin: 0 0 0.5rem 0;
+    line-height: 1.2;
+  }
+
+  .blog-item__date {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    font-size: 0.8rem;
+    color: #78716c;
+    letter-spacing: 0.02em;
+  }
+
+  .blog-item__arrow {
+    width: 48px;
+    height: 48px;
+    border: 1px solid rgba(0, 0, 0, 0.2);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-left: 2rem;
+    flex-shrink: 0;
+    transition: background 0.2s ease, border-color 0.2s ease;
+  }
+
+  .blog-item__arrow svg {
+    color: #1c1917;
+  }
+
+  .blog-item:hover .blog-item__arrow {
+    background: #1c1917;
+    border-color: #1c1917;
+  }
+
+  .blog-item:hover .blog-item__arrow svg {
+    color: #ffffff;
   }
 
   /* ============================================
@@ -593,21 +739,64 @@ const lastName = "DASGUPTA";
 
     .hero {
       padding: 1.5rem;
-      padding-bottom: 2rem;
+      padding-bottom: 1.5rem;
+      justify-content: flex-start;
+      padding-top: 60vh; /* Text starts at ~3/5 of page */
+    }
+
+    .hero__background {
+      height: calc(100vh + 400px); /* Full bleed on mobile too */
+    }
+
+    .hero__text-container {
+      position: relative;
+      z-index: 20; /* Above background */
     }
 
     .hero__portrait {
-      top: 35%;
-      width: 45vw;
-      max-width: 180px;
+      top: 25%;
+      width: clamp(35vw, 45vw, 180px); /* Dynamic scaling */
+      max-width: none;
+      z-index: 20; /* Above background */
     }
 
     .hero__title {
       font-size: clamp(2.5rem, 15vw, 5rem);
     }
 
-    .books-section {
-      height: 200px;
+    /* Hide book stacks on mobile for cleaner look */
+    .blog-section__books {
+      display: none;
+    }
+
+    /* Adjust decorations for mobile */
+    .hero__deco--circle-1 {
+      width: 50px;
+      height: 50px;
+      left: 5%;
+      top: 15%;
+    }
+
+    .hero__deco--circle-2 {
+      width: 35px;
+      height: 35px;
+      right: 10%;
+      top: 50%;
+    }
+
+    .hero__deco--arrow {
+      display: none;
+    }
+
+    .blog-item__arrow {
+      width: 40px;
+      height: 40px;
+      margin-left: 1rem;
+    }
+
+    .blog-item__arrow svg {
+      width: 20px;
+      height: 20px;
     }
   }
 
@@ -621,10 +810,16 @@ const lastName = "DASGUPTA";
       letter-spacing: 0.08em;
     }
 
+    .hero {
+      justify-content: flex-start;
+      padding-top: 55vh; /* Text starts slightly higher on small phones */
+      padding-bottom: 1rem;
+    }
+
     .hero__portrait {
-      top: 32%;
-      width: 50vw;
-      max-width: 160px;
+      top: 20%;
+      width: clamp(40vw, 50vw, 160px); /* Dynamic scaling */
+      max-width: none;
     }
 
     .hero__title {
@@ -632,8 +827,17 @@ const lastName = "DASGUPTA";
       letter-spacing: -0.02em;
     }
 
-    .books-section {
-      height: 150px;
+    .blog-item {
+      padding: 1.25rem 0;
+    }
+
+    .blog-item__title {
+      font-size: 1.1rem;
+    }
+
+    .blog-item__arrow {
+      width: 36px;
+      height: 36px;
     }
   }
 </style>
