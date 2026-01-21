@@ -25,6 +25,9 @@ export default defineConfig({
         },
         workbox: {
           globPatterns: ['**/*.{js,css,html,ico,png,svg,webp,avif}'],
+          // Exclude large files from precaching for low-bandwidth users
+          globIgnores: ['books/background.png'],
+          maximumFileSizeToCacheInBytes: 2 * 1024 * 1024, // 2 MB limit
         },
         includeAssets: ['favicon.svg'],
       }),
