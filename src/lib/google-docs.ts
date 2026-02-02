@@ -232,13 +232,14 @@ function cleanGoogleDocsHtml(html: string): {
   // Add centering class to all images
   cleanHtml = cleanHtml.replace(/<img([^>]*)>/gi, '<img$1 class="blog-image">');
   
-  // Clean up remaining HTML - PRESERVE paragraph structure better
+  // Fix Google Docs issue: merge consecutive <p> tags that should be one paragraph
+  // Google Docs exports each line as a separate <p> tag, but they should be merged
+  // unless there's an actual paragraph break (empty line)
   cleanHtml = cleanHtml
+    .replace(/<\/p>\s*<p[^>]*>/gi, ' ') // Merge consecutive <p> tags into one
     .replace(/<p[^>]*>\s*<\/p>/gi, '') // Remove empty paragraphs
     .replace(/<div[^>]*>\s*<\/div>/gi, '') // Remove empty divs
-    // Don't convert br tags aggressively - just clean up excessive ones
-    .replace(/(<br\s*\/?>){3,}/gi, '<br><br>') // Max 2 consecutive br tags
-    // Normalize whitespace within text, but preserve structure
+    .replace(/(<br\s*\/?>){2,}/gi, '</p><p>') // Convert double line breaks to paragraph breaks
     .replace(/\t/g, ' ') // Replace tabs with spaces
     .replace(/  +/g, ' ') // Collapse multiple spaces to one
     .trim();
