@@ -7,7 +7,6 @@
 import gsap from 'gsap';
 import { CustomEase } from "gsap/CustomEase";
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
-import { GPUSamplerBindingType } from 'three/src/renderers/webgpu/utils/WebGPUConstants.js';
 
 gsap.registerPlugin(CustomEase);
 gsap.registerPlugin(ScrollTrigger);
