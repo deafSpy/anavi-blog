@@ -52,8 +52,10 @@ const { musicFiles = [] } = Astro.props;
     <!-- Reset Button (Debug) -->
     <button id="hunt-reset" class="hunt-reset">[RESET]</button>
 
-    <!-- Stage Container - Content rendered dynamically -->
-    <div id="stage-container" class="stage-container"></div>
+    <!-- Stage Container - Slider for smooth transitions -->
+    <div id="stage-container" class="stage-container">
+      <div id="stage-slider" class="stage-slider"></div>
+    </div>
 
     <!-- Success Message Overlay -->
     <div id="success-overlay" class="success-overlay">
@@ -312,14 +314,43 @@ const { musicFiles = [] } = Astro.props;
     color: var(--hunt-danger, #e07a7a);
   }
 
-  /* Stage Container */
+  /* Stage Container - Slider Wrapper */
   .stage-container {
+    width: 100%;
+    min-height: calc(100vh - 6rem);
+    position: relative;
+    overflow: hidden;
+    padding: 1rem 0;
+  }
+
+  /* Stage Slider - Horizontal Carousel */
+  .stage-slider {
+    display: flex;
+    width: 100%;
+    height: 100%;
+    transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+    will-change: transform;
+  }
+
+  /* Individual Stage Slide */
+  .stage-slide {
+    flex: 0 0 100%;
     width: 100%;
     min-height: calc(100vh - 6rem);
     display: flex;
     flex-direction: column;
     align-items: center;
-    padding: 1rem;
+    padding: 0 1rem;
+    opacity: 0;
+    transition: opacity 0.4s ease;
+  }
+
+  .stage-slide.active {
+    opacity: 1;
+  }
+
+  .stage-slide.preload {
+    opacity: 0;
   }
 
   /* Success Overlay */
@@ -541,6 +572,7 @@ const { musicFiles = [] } = Astro.props;
   import { huntStages, DEBUG_MODE, KONAMI_SEQUENCE } from './GameConfig.js';
   import { playCipherAnimation } from '../components/CipherGlitch';
   import { initImageTrail, startTrail, stopTrail, destroyImageTrail } from '../components/ImageTrail';
+  import { initPassBypass, destroyPassBypass, resetBypassProgress } from '../components/PassBypass';
 
   // ============================================
   // Hunt Engine State
@@ -549,16 +581,17 @@ const { musicFiles = [] } = Astro.props;
   const SOLVED_KEY = 'hunt_solved';
   
   let currentStageIndex = 0;
-  let solvedStages = new Set();
+  let solvedStages = new Set<number>();
   let stagePhase = 'puzzle'; // 'puzzle' or 'memory'
   let isActive = false;
-  let konamiProgress = [];
-  let lenisInstance = null;
+  let konamiProgress: string[] = [];
+  let lenisInstance: any = null;
 
   // DOM Elements
   const overlay = document.getElementById('hunt-overlay');
   const transitionLayer = document.getElementById('transition-layer');
   const stageContainer = document.getElementById('stage-container');
+  const stageSlider = document.getElementById('stage-slider');
   const progressText = document.getElementById('hunt-progress-text');
   const progressFill = document.getElementById('hunt-progress-fill');
   const successOverlay = document.getElementById('success-overlay');
@@ -567,6 +600,10 @@ const { musicFiles = [] } = Astro.props;
   const resetBtn = document.getElementById('hunt-reset');
   const navPrev = document.getElementById('nav-prev');
   const navNext = document.getElementById('nav-next');
+  
+  // Slider state
+  let slideCache = new Map<number, HTMLElement>();
+  let isSliding = false;
   
   // Music Player Elements
   const musicPlayer = document.getElementById('music-player');
@@ -756,7 +793,7 @@ const { musicFiles = [] } = Astro.props;
   // ============================================
   // Transition Animation
   // ============================================
-  function playTransition() {
+  function playTransition(): Promise<void> {
     return new Promise((resolve) => {
       if (!transitionLayer) { resolve(); return; }
       
@@ -799,9 +836,16 @@ const { musicFiles = [] } = Astro.props;
     // Stop music
     stopMusic();
     
+    // Destroy pass bypass
+    destroyPassBypass();
+    
     if (overlay) overlay.setAttribute('data-active', 'false');
     isActive = false;
-    if (stageContainer) stageContainer.innerHTML = '';
+    
+    // Clear slider cache
+    slideCache.clear();
+    if (stageSlider) stageSlider.innerHTML = '';
+    
     if (lenisInstance) {
       lenisInstance.destroy();
       lenisInstance = null;
@@ -846,26 +890,29 @@ const { musicFiles = [] } = Astro.props;
   function updateNavigation() {
     if (!navPrev || !navNext) return;
     
+    const prevBtn = navPrev as HTMLButtonElement;
+    const nextBtn = navNext as HTMLButtonElement;
+    
     // In debug mode, allow free navigation
     if (DEBUG_MODE) {
-      navPrev.disabled = currentStageIndex === 0;
-      navNext.disabled = currentStageIndex >= huntStages.length - 1;
+      prevBtn.disabled = currentStageIndex === 0;
+      nextBtn.disabled = currentStageIndex >= huntStages.length - 1;
       return;
     }
     
     // Can go prev if not at start
-    navPrev.disabled = currentStageIndex === 0;
+    prevBtn.disabled = currentStageIndex === 0;
     
     // Can go next if current is solved and not at end
     const currentSolved = solvedStages.has(currentStageIndex);
-    navNext.disabled = !currentSolved || currentStageIndex >= huntStages.length - 1;
+    nextBtn.disabled = !currentSolved || currentStageIndex >= huntStages.length - 1;
   }
 
   // Navigation handlers
   if (navPrev) {
     navPrev.addEventListener('click', async () => {
       if (currentStageIndex > 0) {
-        await goToStage(currentStageIndex - 1);
+        await goToStage(currentStageIndex - 1, 'prev');
       }
     });
   }
@@ -874,26 +921,45 @@ const { musicFiles = [] } = Astro.props;
     navNext.addEventListener('click', async () => {
       // In debug mode, allow navigation without solving
       if (DEBUG_MODE && currentStageIndex < huntStages.length - 1) {
-        await goToStage(currentStageIndex + 1);
+        await goToStage(currentStageIndex + 1, 'next');
       } else if (currentStageIndex < huntStages.length - 1 && solvedStages.has(currentStageIndex)) {
-        await goToStage(currentStageIndex + 1);
+        await goToStage(currentStageIndex + 1, 'next');
       }
     });
   }
 
-  async function goToStage(index) {
-    await playTransition();
+  async function goToStage(index: number, direction: 'next' | 'prev' = 'next') {
+    if (isSliding) return; // Prevent multiple simultaneous transitions
+    isSliding = true;
+    
+    const previousIndex = currentStageIndex;
     currentStageIndex = index;
     stagePhase = solvedStages.has(index) ? 'memory' : 'puzzle';
-    renderCurrentStage();
+    
+    // Render the new stage if not already cached
+    if (!slideCache.has(index)) {
+      renderStageToSlide(index);
+    }
+    
+    // Preload adjacent stages for smooth navigation
+    preloadAdjacentStages(index);
+    
+    // Animate the slide transition
+    await slideToStage(previousIndex, index, direction);
+    
+    // Clean up old slides (keep current + adjacent)
+    cleanupDistantSlides(index);
+    
     updateProgress();
     updateNavigation();
+    
+    isSliding = false;
   }
 
   // ============================================
   // Show Success Message
   // ============================================
-  function showSuccessMessage(message) {
+  function showSuccessMessage(message: string): Promise<void> {
     return new Promise((resolve) => {
       if (!successMessage || !successOverlay) { resolve(); return; }
       
@@ -920,13 +986,142 @@ const { musicFiles = [] } = Astro.props;
   }
 
   // ============================================
-  // Render Current Stage
+  // Slider Management Functions
   // ============================================
-  function renderCurrentStage() {
-    const stage = huntStages[currentStageIndex];
-    if (!stage || !stageContainer) return;
+  
+  /**
+   * Render a stage to a slide element and cache it
+   */
+  function renderStageToSlide(stageIndex: number): HTMLElement | null {
+    const stage = huntStages[stageIndex];
+    if (!stage || !stageSlider) return null;
 
-    stageContainer.innerHTML = '';
+    // Create slide container
+    const slide = document.createElement('div');
+    slide.className = 'stage-slide';
+    slide.dataset.stageIndex = stageIndex.toString();
+    
+    // Render content based on stage type
+    const content = renderStageContent(stageIndex);
+    slide.innerHTML = content;
+    
+    // Add to slider
+    stageSlider.appendChild(slide);
+    
+    // Cache the slide
+    slideCache.set(stageIndex, slide);
+    
+    // Initialize interactions after a short delay to ensure DOM is ready
+    setTimeout(() => {
+      initStageInteractions(stageIndex, slide);
+    }, 50);
+    
+    return slide;
+  }
+  
+  /**
+   * Preload adjacent stages for smooth transitions
+   */
+  function preloadAdjacentStages(currentIndex: number) {
+    // Preload previous stage
+    if (currentIndex > 0 && !slideCache.has(currentIndex - 1)) {
+      renderStageToSlide(currentIndex - 1);
+    }
+    
+    // Preload next stage
+    if (currentIndex < huntStages.length - 1 && !slideCache.has(currentIndex + 1)) {
+      renderStageToSlide(currentIndex + 1);
+    }
+  }
+  
+  /**
+   * Clean up slides that are far from current position
+   */
+  function cleanupDistantSlides(currentIndex: number) {
+    const keepRange = 2; // Keep current + 2 on each side
+    
+    slideCache.forEach((slide, index) => {
+      if (Math.abs(index - currentIndex) > keepRange) {
+        slide.remove();
+        slideCache.delete(index);
+      }
+    });
+  }
+  
+  /**
+   * Animate sliding to a specific stage
+   */
+  async function slideToStage(fromIndex: number, toIndex: number, direction: 'next' | 'prev'): Promise<void> {
+    if (!stageSlider) return;
+    
+    const fromSlide = slideCache.get(fromIndex);
+    const toSlide = slideCache.get(toIndex);
+    
+    if (!toSlide) return;
+    
+    // Mark active slide
+    slideCache.forEach((slide, index) => {
+      slide.classList.remove('active');
+      if (index === toIndex) {
+        slide.classList.add('active');
+      }
+    });
+    
+    // Calculate slide positions
+    const slideWidth = stageContainer?.offsetWidth || window.innerWidth;
+    const offset = -toIndex * slideWidth;
+    
+    // Animate slider
+    return new Promise((resolve) => {
+      gsap.to(stageSlider, {
+        x: offset,
+        duration: 0.6,
+        ease: 'power2.inOut',
+        onComplete: () => {
+          // Reset bypass progress after transition
+          resetBypassProgress();
+          
+          // Update image trail
+          const isStageSolved = solvedStages.has(toIndex);
+          const stage = huntStages[toIndex];
+          if (isStageSolved && stage.type === 'puzzle') {
+            startTrail();
+          } else {
+            stopTrail();
+          }
+          
+          resolve();
+        }
+      });
+      
+      // Fade out previous slide
+      if (fromSlide) {
+        gsap.to(fromSlide, {
+          opacity: 0.3,
+          duration: 0.3,
+          onComplete: () => {
+            gsap.set(fromSlide, { opacity: 0 });
+          }
+        });
+      }
+      
+      // Fade in new slide
+      gsap.fromTo(toSlide, 
+        { opacity: 0 },
+        { opacity: 1, duration: 0.4, delay: 0.2 }
+      );
+    });
+  }
+  
+  /**
+   * Initial render - sets up the slider with current stage
+   */
+  function renderCurrentStage() {
+    if (!stageSlider) return;
+    
+    // Clear existing content
+    stageSlider.innerHTML = '';
+    slideCache.clear();
     
     // Clean up previous Lenis
     if (lenisInstance) {
@@ -934,47 +1129,130 @@ const { musicFiles = [] } = Astro.props;
       lenisInstance = null;
     }
     
+    // Render current stage
+    const currentSlide = renderStageToSlide(currentStageIndex);
+    if (currentSlide) {
+      currentSlide.classList.add('active');
+      gsap.set(currentSlide, { opacity: 1 });
+    }
+    
+    // Preload adjacent stages
+    preloadAdjacentStages(currentStageIndex);
+    
     // Check if current stage is solved (for image trail)
     const isStageSolved = solvedStages.has(currentStageIndex);
-    
-    // Start trail on completed puzzles, stop on unsolved
+    const stage = huntStages[currentStageIndex];
     if (isStageSolved && stage.type === 'puzzle') {
       startTrail();
     } else {
       stopTrail();
     }
+  }
+  
+  /**
+   * Generate HTML content for a stage (extracted from switch statement)
+   */
+  function renderStageContent(stageIndex: number): string {
+    const stage = huntStages[stageIndex];
+    if (!stage) return '';
+    
+    // Reset bypass progress when switching stages
+    resetBypassProgress();
 
     switch (stage.type) {
       case 'puzzle':
-        renderPuzzleStage(stage);
+        return generatePuzzleHTML(stage, stageIndex);
+      case 'glitch_puzzle':
+        return generateGlitchPuzzleHTML(stage, stageIndex);
+      case 'crossword':
+        return generateCrosswordHTML(stage, stageIndex);
+      case 'responsive_squeeze':
+        return generateResponsiveSqueezeHTML(stage, stageIndex);
+      case 'emoji_puzzle':
+        return generateEmojiPuzzleHTML(stage, stageIndex);
+      case 'invisible_ink':
+        return generateInvisibleInkHTML(stage, stageIndex);
+      case 'love_wordle':
+        return generateLoveWordleHTML(stage, stageIndex);
+      case 'fake_404':
+        return generateFake404HTML(stage, stageIndex);
+      case 'captcha_puzzle':
+        return generateCaptchaHTML(stage, stageIndex);
+      case 'date_gate':
+        return generateDateGateHTML(stage, stageIndex);
+      case 'video_reveal':
+        return generateVideoRevealHTML(stage, stageIndex);
+      default:
+        return generatePuzzleHTML(stage, stageIndex);
+    }
+  }
+  
+  /**
+   * Initialize interactions for a rendered stage
+   */
+  function initStageInteractions(stageIndex: number, slideElement: HTMLElement) {
+    const stage = huntStages[stageIndex];
+    if (!stage) return;
+    
+    // Set the context to the specific slide for queries
+    const previousContainer = stageContainer;
+    
+    // Temporarily override stageContainer to point to this slide
+    // This ensures all the existing init functions work with the slide
+    (window as any).__currentSlideContext = slideElement;
+    
+    switch (stage.type) {
+      case 'puzzle':
+        initPuzzleInteractionsInSlide(stage, slideElement, stageIndex);
         break;
       case 'glitch_puzzle':
-        renderGlitchPuzzle(stage);
+        initGlitchPuzzleInSlide(stage, slideElement, stageIndex);
         break;
       case 'crossword':
-        renderCrossword(stage);
+        initCrosswordInSlide(stage, slideElement, stageIndex);
+        break;
+      case 'responsive_squeeze':
+        initResponsiveSqueezeInSlide(stage, slideElement, stageIndex);
+        break;
+      case 'emoji_puzzle':
+        initEmojiPuzzleInSlide(stage, slideElement, stageIndex);
+        break;
+      case 'invisible_ink':
+        initInvisibleInkInSlide(stage, slideElement, stageIndex);
+        break;
+      case 'love_wordle':
+        initLoveWordleInSlide(stage, slideElement, stageIndex);
+        break;
+      case 'fake_404':
+        initFake404InSlide(stage, slideElement, stageIndex);
+        break;
+      case 'captcha_puzzle':
+        initCaptchaInSlide(stage, slideElement, stageIndex);
         break;
       case 'date_gate':
-        renderDateGate(stage);
+        initDateGateInSlide(stage, slideElement, stageIndex);
         break;
       case 'video_reveal':
-        renderVideoReveal(stage);
+        initVideoRevealInSlide(stage, slideElement, stageIndex);
         break;
-      default:
-        renderPuzzleStage(stage);
     }
+    
+    (window as any).__currentSlideContext = null;
   }
 
   // ============================================
-  // Render Combined Puzzle + Memory Lane Stage
+  // HTML Generation Functions for Each Puzzle Type
   // ============================================
-  function renderPuzzleStage(stage) {
-    const isSolved = solvedStages.has(currentStageIndex);
+  
+  /**
+   * Generate HTML for standard puzzle stage
+   */
+  function generatePuzzleHTML(stage: any, stageIndex: number): string {
+    const isSolved = solvedStages.has(stageIndex);
     const memories = stage.memories || [];
     
-    // Build puzzle HTML
     const puzzleHtml = `
-      <div class="puzzle-section ${isSolved ? 'solved' : ''}" id="puzzle-section">
+      <div class="puzzle-section ${isSolved ? 'solved' : ''}" id="puzzle-section-${stageIndex}">
         <div class="puzzle-card">
           <div class="terminal-frame">
             <div class="terminal-header">
@@ -983,22 +1261,22 @@ const { musicFiles = [] } = Astro.props;
                 <span class="dot yellow"></span>
                 <span class="dot green"></span>
               </div>
-              <span class="terminal-title">✧ puzzle ${currentStageIndex + 1} ✧</span>
+              <span class="terminal-title">✧ puzzle ${stageIndex + 1} ✧</span>
             </div>
             <div class="terminal-content">
               ${isSolved ? `
                 <div class="puzzle-prompt">${stage.prompt}</div>
                 <div class="solved-answer">✓ ${stage.answer}</div>
               ` : `
-                <div class="puzzle-prompt" id="puzzle-prompt"></div>
-                <div class="puzzle-subtext" id="puzzle-subtext"></div>
+                <div class="puzzle-prompt" id="puzzle-prompt-${stageIndex}"></div>
+                <div class="puzzle-subtext" id="puzzle-subtext-${stageIndex}"></div>
                 ${stage.imageClue ? `<div class="puzzle-image"><img src="${stage.imageClue}" alt="Clue" /></div>` : ''}
-                <form class="puzzle-form" id="puzzle-form">
+                <form class="puzzle-form" id="puzzle-form-${stageIndex}">
                   <div class="puzzle-input-wrapper">
                     <span class="puzzle-cursor">♡</span>
                     <input 
                       type="${stage.inputType === 'numeric' ? 'tel' : 'text'}" 
-                      id="puzzle-input" 
+                      id="puzzle-input-${stageIndex}" 
                       class="puzzle-input"
                       placeholder="${stage.inputPlaceholder || 'your answer...'}"
                       autocomplete="off"
@@ -1007,12 +1285,12 @@ const { musicFiles = [] } = Astro.props;
                     />
                     <button type="submit" class="puzzle-submit">Submit</button>
                   </div>
-                  <div class="puzzle-error" id="puzzle-error"></div>
+                  <div class="puzzle-error" id="puzzle-error-${stageIndex}"></div>
                 </form>
                 ${stage.hint ? `
                   <div class="hint-container">
-                    <button type="button" class="hint-toggle" id="hint-toggle">need a hint?</button>
-                    <div class="hint-text" id="hint-text">${stage.hint}</div>
+                    <button type="button" class="hint-toggle" id="hint-toggle-${stageIndex}">need a hint?</button>
+                    <div class="hint-text" id="hint-text-${stageIndex}">${stage.hint}</div>
                   </div>
                 ` : ''}
               `}
@@ -1022,12 +1300,11 @@ const { musicFiles = [] } = Astro.props;
       </div>
     `;
 
-    // Build memories HTML (hidden initially if not solved)
     const memoriesHtml = memories.length > 0 ? `
-      <div class="memories-section ${isSolved ? 'visible' : ''}" id="memories-section">
+      <div class="memories-section ${isSolved ? 'visible' : ''}" id="memories-section-${stageIndex}">
         ${stage.memoriesMessage ? `<p class="memories-message">${stage.memoriesMessage}</p>` : ''}
-        <div class="memories-container" id="memories-container">
-          ${memories.map((mem, i) => `
+        <div class="memories-container" id="memories-container-${stageIndex}">
+          ${memories.map((mem: any, i: number) => `
             <div class="memory-card" data-index="${i}" data-speed="${0.3 + (i % 3) * 0.1}">
               <div class="memory-card-inner">
                 <img class="static-image" src="${typeof mem === 'string' ? mem : mem.image}" alt="Memory ${i + 1}" 
@@ -1039,26 +1316,369 @@ const { musicFiles = [] } = Astro.props;
             </div>
           `).join('')}
         </div>
-        <button class="continue-btn" id="continue-btn">Next →</button>
+        <button class="continue-btn" id="continue-btn-${stageIndex}">Next →</button>
       </div>
     ` : '';
 
-    stageContainer.innerHTML = puzzleHtml + memoriesHtml;
-
+    return puzzleHtml + memoriesHtml;
+  }
+  
+  /**
+   * Initialize interactions for puzzle in slide
+   */
+  function initPuzzleInteractionsInSlide(stage: any, slideElement: HTMLElement, stageIndex: number) {
+    const isSolved = solvedStages.has(stageIndex);
+    
     if (!isSolved) {
-      initPuzzleInteractions(stage);
+      const promptEl = slideElement.querySelector(`#puzzle-prompt-${stageIndex}`) as HTMLElement;
+      const subtextEl = slideElement.querySelector(`#puzzle-subtext-${stageIndex}`) as HTMLElement;
+      const form = slideElement.querySelector(`#puzzle-form-${stageIndex}`) as HTMLFormElement;
+      const input = slideElement.querySelector(`#puzzle-input-${stageIndex}`) as HTMLInputElement;
+      const errorEl = slideElement.querySelector(`#puzzle-error-${stageIndex}`) as HTMLElement;
+      const hintToggle = slideElement.querySelector(`#hint-toggle-${stageIndex}`) as HTMLElement;
+      const hintText = slideElement.querySelector(`#hint-text-${stageIndex}`) as HTMLElement;
+      const puzzleSection = slideElement.querySelector(`#puzzle-section-${stageIndex}`) as HTMLElement;
+      const memoriesSection = slideElement.querySelector(`#memories-section-${stageIndex}`) as HTMLElement;
+
+      // Initialize PASS bypass for this puzzle
+      initPassBypass(() => {
+        if (form && input) {
+          const correctAnswer = Array.isArray(stage.answer) ? stage.answer[0] : stage.answer;
+          input.value = correctAnswer;
+          form.dispatchEvent(new Event('submit', { cancelable: true }));
+        }
+      });
+
+      // Typewriter effect
+      if (promptEl && stage.prompt) {
+        typewriterEffect(promptEl, stage.prompt, 40, () => {
+          if (subtextEl && stage.subtext) {
+            typewriterEffect(subtextEl, stage.subtext, 25, () => {
+              if (input) input.focus();
+            });
+          } else if (input) {
+            input.focus();
+          }
+        });
+      }
+
+      // Numeric input filter
+      if (stage.inputType === 'numeric' && input) {
+        input.addEventListener('input', (e) => {
+          const target = e.target as HTMLInputElement;
+          target.value = target.value.replace(/[^0-9]/g, '');
+        });
+      }
+
+      // Hint toggle
+      if (hintToggle && hintText) {
+        hintToggle.addEventListener('click', () => {
+          hintText.classList.toggle('visible');
+          hintToggle.textContent = hintText.classList.contains('visible') ? 'hide hint' : 'need a hint?';
+        });
+      }
+
+      // Form submission
+      if (form && input) {
+        form.addEventListener('submit', async (e) => {
+          e.preventDefault();
+          
+          const userAnswer = stage.inputType === 'text'
+            ? input.value.toLowerCase().trim()
+            : input.value.trim();
+          
+          const correctAnswers = Array.isArray(stage.answer) 
+            ? stage.answer 
+            : [stage.answer];
+          
+          const isCorrect = correctAnswers.some((ans: any) => {
+            const normalizedAns = stage.inputType === 'text' 
+              ? ans.toLowerCase().trim() 
+              : ans.trim();
+            return userAnswer === normalizedAns;
+          });
+
+          if (isCorrect) {
+            solvedStages.add(stageIndex);
+            saveProgress();
+            updateNavigation();
+            await showSuccessMessage(stage.successMessage || 'Correct! ♡');
+
+            if (puzzleSection) {
+              gsap.to(puzzleSection, {
+                scale: 0.92,
+                opacity: 0.7,
+                duration: 0.5
+              });
+              puzzleSection.classList.add('solved');
+            }
+
+            if (memoriesSection) {
+              memoriesSection.classList.add('visible');
+              initMemoryInteractionsInSlide(slideElement, stageIndex);
+              initContinueButtonInSlide(slideElement, stageIndex);
+            }
+          } else {
+            gsap.to(puzzleSection.querySelector('.puzzle-card'), {
+              x: -8,
+              duration: 0.4,
+              ease: 'power2.inOut',
+              repeat: 3,
+              yoyo: true
+            });
+            
+            if (errorEl) {
+              errorEl.textContent = `not quite... try again ♡`;
+              errorEl.style.opacity = '1';
+            }
+            
+            input.value = '';
+            input.focus();
+          }
+        });
+      }
+      
       // Preload memory images
-      preloadMemoryImages(memories);
+      preloadMemoryImages(stage.memories || []);
     } else {
-      initMemoryInteractions();
-      initContinueButton();
+      initMemoryInteractionsInSlide(slideElement, stageIndex);
+      initContinueButtonInSlide(slideElement, stageIndex);
     }
   }
 
-  // ============================================
-  // Preload Memory Images
-  // ============================================
-  function preloadMemoryImages(memories) {
+  /**
+   * Initialize memory interactions within a slide
+   */
+  function initMemoryInteractionsInSlide(slideElement: HTMLElement, stageIndex: number) {
+    const memoriesContainer = slideElement.querySelector(`#memories-container-${stageIndex}`) as HTMLElement;
+    if (!memoriesContainer) return;
+
+    const cards = memoriesContainer.querySelectorAll('.memory-card');
+    if (cards.length === 0) return;
+
+    // Tilt effect and live photo on each card
+    cards.forEach((card, index) => {
+      const inner = card.querySelector('.memory-card-inner');
+      const staticImg = card.querySelector('.static-image');
+      const livePhoto = card.querySelector('.live-photo');
+      
+      card.addEventListener('mousemove', ((e: MouseEvent) => {
+        const rect = card.getBoundingClientRect();
+        const x = (e.clientX - rect.left) / rect.width - 0.5;
+        const y = (e.clientY - rect.top) / rect.height - 0.5;
+        
+        gsap.to(inner, {
+          rotateX: y * -12,
+          rotateY: x * 12,
+          scale: 1.02,
+          duration: 0.3,
+          ease: 'power2.out'
+        });
+      }) as EventListener);
+
+      card.addEventListener('mouseleave', () => {
+        gsap.to(inner, {
+          rotateX: 0,
+          rotateY: 0,
+          scale: 1,
+          duration: 0.5,
+          ease: 'power2.out'
+        });
+
+        if (livePhoto) {
+          gsap.to(livePhoto, { opacity: 0, duration: 0.3 });
+        }
+        if (staticImg) {
+          gsap.to(staticImg, { opacity: 1, duration: 0.3 });
+        }
+      });
+
+      card.addEventListener('mouseenter', () => {
+        if (livePhoto) {
+          gsap.to(livePhoto, { opacity: 1, duration: 0.3 });
+          gsap.to(staticImg, { opacity: 0, duration: 0.3 });
+        }
+      });
+
+      gsap.fromTo(card,
+        { opacity: 0, y: 50 },
+        { 
+          opacity: 1, 
+          y: 0, 
+          duration: 0.6,
+          delay: 0.1 * index,
+          ease: 'power2.out'
+        }
+      );
+    });
+  }
+  
+  /**
+   * Initialize continue button within a slide
+   */
+  function initContinueButtonInSlide(slideElement: HTMLElement, stageIndex: number) {
+    const btn = slideElement.querySelector(`#continue-btn-${stageIndex}`) as HTMLButtonElement;
+    if (!btn) return;
+
+    btn.addEventListener('click', async () => {
+      if (stageIndex < huntStages.length - 1) {
+        await goToStage(stageIndex + 1, 'next');
+      }
+    });
+  }
+
+  /**
+   * Generate HTML for glitch puzzle
+   */
+  function generateGlitchPuzzleHTML(stage: any, stageIndex: number): string {
+    const fragments = stage.linkFragments || [];
+    return `
+      <div class="glitch-puzzle" id="glitch-puzzle-${stageIndex}">
+        <div class="glitch-container">
+          <div class="glitch-error-overlay"></div>
+          <div class="glitch-header">
+            <span class="glitch-status">⚠ ERROR: MEMORY_CORRUPTION_DETECTED</span>
+          </div>
+          <div class="glitch-content">
+            ${fragments.map((frag: string, i: number) => `
+              <span class="glitch-fragment" style="animation-delay: ${i * 0.8}s">${frag}</span>
+            `).join('')}
+            <div class="glitch-prompt" data-text="${stage.prompt || 'SYSTEM ERROR'}" id="glitch-prompt-${stageIndex}">
+              ${stage.prompt || '▓▓▓ CORRUPTED DATA ▓▓▓'}
+            </div>
+            <div class="glitch-subtext" id="glitch-subtext-${stageIndex}">
+              ${stage.subtext || 'Something is hidden in the noise...'}
+            </div>
+            <form class="glitch-form puzzle-form" id="puzzle-form-${stageIndex}">
+              <div class="puzzle-input-wrapper">
+                <span class="puzzle-cursor">▓</span>
+                <input 
+                  type="${stage.inputType === 'numeric' ? 'tel' : 'text'}" 
+                  id="puzzle-input-${stageIndex}" 
+                  class="puzzle-input"
+                  placeholder="${stage.inputPlaceholder || 'decode the signal...'}"
+                  autocomplete="off" autocorrect="off" spellcheck="false"
+                />
+                <button type="submit" class="puzzle-submit">Decode</button>
+              </div>
+              <div class="puzzle-error" id="puzzle-error-${stageIndex}"></div>
+            </form>
+            ${stage.hint ? `
+              <div class="hint-container">
+                <button type="button" class="hint-toggle" id="hint-toggle-${stageIndex}">need a hint?</button>
+                <div class="hint-text" id="hint-text-${stageIndex}">${stage.hint}</div>
+              </div>
+            ` : ''}
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  function initGlitchPuzzleInSlide(stage: any, slideElement: HTMLElement, stageIndex: number) {
+    // Initialize PASS bypass
+    const form = slideElement.querySelector(`#puzzle-form-${stageIndex}`) as HTMLFormElement;
+    const input = slideElement.querySelector(`#puzzle-input-${stageIndex}`) as HTMLInputElement;
+    initPassBypass(() => {
+      if (form && input) {
+        const correctAnswer = Array.isArray(stage.answer) ? stage.answer[0] : stage.answer;
+        input.value = correctAnswer;
+        form.dispatchEvent(new Event('submit', { cancelable: true }));
+      }
+    });
+
+    // Reuse standard puzzle interactions
+    initPuzzleInteractionsInSlide(stage, slideElement, stageIndex);
+
+    // Add glitch effect
+    const glitchEl = slideElement.querySelector(`#glitch-puzzle-${stageIndex}`) as HTMLElement;
+    if (glitchEl) {
+      setInterval(() => {
+        if (Math.random() > 0.92) {
+          glitchEl.style.transform = `translateX(${(Math.random() - 0.5) * 4}px)`;
+          setTimeout(() => {
+            glitchEl.style.transform = 'translateX(0)';
+          }, 50);
+        }
+      }, 200);
+    }
+  }
+
+  // For other puzzle types, create simple wrappers that call the old functions with scoped elements
+  function generateCrosswordHTML(stage: any, stageIndex: number): string {
+    // For now, we'll keep crossword as a simple wrapper
+    return '<div id="crossword-placeholder-' + stageIndex + '">Crossword</div>';
+  }
+
+  function initCrosswordInSlide(stage: any, slideElement: HTMLElement, stageIndex: number) {
+    // Placeholder - crossword is complex, will refactor separately if needed
+  }
+
+  function generateResponsiveSqueezeHTML(stage: any, stageIndex: number): string {
+    return '<div id="responsive-placeholder-' + stageIndex + '">Responsive Squeeze</div>';
+  }
+
+  function initResponsiveSqueezeInSlide(stage: any, slideElement: HTMLElement, stageIndex: number) {
+    // Placeholder
+  }
+
+  function generateEmojiPuzzleHTML(stage: any, stageIndex: number): string {
+    return '<div id="emoji-placeholder-' + stageIndex + '">Emoji Puzzle</div>';
+  }
+
+  function initEmojiPuzzleInSlide(stage: any, slideElement: HTMLElement, stageIndex: number) {
+    // Placeholder
+  }
+
+  function generateInvisibleInkHTML(stage: any, stageIndex: number): string {
+    return '<div id="invisible-placeholder-' + stageIndex + '">Invisible Ink</div>';
+  }
+
+  function initInvisibleInkInSlide(stage: any, slideElement: HTMLElement, stageIndex: number) {
+    // Placeholder
+  }
+
+  function generateLoveWordleHTML(stage: any, stageIndex: number): string {
+    return '<div id="wordle-placeholder-' + stageIndex + '">Love Wordle</div>';
+  }
+
+  function initLoveWordleInSlide(stage: any, slideElement: HTMLElement, stageIndex: number) {
+    // Placeholder
+  }
+
+  function generateFake404HTML(stage: any, stageIndex: number): string {
+    return '<div id="fake404-placeholder-' + stageIndex + '">Fake 404</div>';
+  }
+
+  function initFake404InSlide(stage: any, slideElement: HTMLElement, stageIndex: number) {
+    // Placeholder
+  }
+
+  function generateCaptchaHTML(stage: any, stageIndex: number): string {
+    return '<div id="captcha-placeholder-' + stageIndex + '">Captcha</div>';
+  }
+
+  function initCaptchaInSlide(stage: any, slideElement: HTMLElement, stageIndex: number) {
+    // Placeholder
+  }
+
+  function generateDateGateHTML(stage: any, stageIndex: number): string {
+    return '<div id="dategate-placeholder-' + stageIndex + '">Date Gate</div>';
+  }
+
+  function initDateGateInSlide(stage: any, slideElement: HTMLElement, stageIndex: number) {
+    // Placeholder
+  }
+
+  function generateVideoRevealHTML(stage: any, stageIndex: number): string {
+    return '<div id="video-placeholder-' + stageIndex + '">Video Reveal</div>';
+  }
+
+  function initVideoRevealInSlide(stage: any, slideElement: HTMLElement, stageIndex: number) {
+    // Placeholder
+  }
+
+  function preloadMemoryImages(memories: any[]) {
     memories.forEach(mem => {
       const img = new Image();
       img.src = typeof mem === 'string' ? mem : mem.image;
@@ -1072,7 +1692,7 @@ const { musicFiles = [] } = Astro.props;
   // ============================================
   // Puzzle Interactions
   // ============================================
-  function initPuzzleInteractions(stage) {
+  function initPuzzleInteractions(stage: any) {
     const promptEl = document.getElementById('puzzle-prompt');
     const subtextEl = document.getElementById('puzzle-subtext');
     const form = document.getElementById('puzzle-form');
@@ -1082,6 +1702,17 @@ const { musicFiles = [] } = Astro.props;
     const hintText = document.getElementById('hint-text');
     const puzzleSection = document.getElementById('puzzle-section');
     const memoriesSection = document.getElementById('memories-section');
+
+    // Initialize PASS bypass for this puzzle
+    initPassBypass(() => {
+      // Auto-submit the correct answer
+      if (form && input) {
+        const inp = input as HTMLInputElement;
+        const correctAnswer = Array.isArray(stage.answer) ? stage.answer[0] : stage.answer;
+        inp.value = correctAnswer;
+        form.dispatchEvent(new Event('submit', { cancelable: true }));
+      }
+    });
 
     // Typewriter effect
     if (promptEl && stage.prompt) {
@@ -1099,7 +1730,8 @@ const { musicFiles = [] } = Astro.props;
     // Numeric input filter
     if (stage.inputType === 'numeric' && input) {
       input.addEventListener('input', (e) => {
-        e.target.value = e.target.value.replace(/[^0-9]/g, '');
+        const target = e.target as HTMLInputElement;
+        target.value = target.value.replace(/[^0-9]/g, '');
       });
     }
 
@@ -1116,16 +1748,17 @@ const { musicFiles = [] } = Astro.props;
       form.addEventListener('submit', async (e) => {
         e.preventDefault();
         
+        const inp = input as HTMLInputElement;
         const userAnswer = stage.inputType === 'text'
-          ? input.value.toLowerCase().trim()
-          : input.value.trim();
+          ? inp.value.toLowerCase().trim()
+          : inp.value.trim();
         
         // Support multiple correct answers (array or single string)
         const correctAnswers = Array.isArray(stage.answer) 
           ? stage.answer 
           : [stage.answer];
         
-        const isCorrect = correctAnswers.some(ans => {
+        const isCorrect = correctAnswers.some((ans: any) => {
           const normalizedAns = stage.inputType === 'text' 
             ? ans.toLowerCase().trim() 
             : ans.trim();
@@ -1161,9 +1794,11 @@ const { musicFiles = [] } = Astro.props;
         } else {
           // Error shake
           gsap.to('.puzzle-card', {
-            x: [-8, 8, -8, 8, 0],
+            x: -8,
             duration: 0.4,
-            ease: 'power2.inOut'
+            ease: 'power2.inOut',
+            repeat: 3,
+            yoyo: true
           });
           
           if (errorEl) {
@@ -1173,8 +1808,8 @@ const { musicFiles = [] } = Astro.props;
             errorEl.style.opacity = '1';
           }
           
-          input.value = '';
-          input.focus();
+          inp.value = '';
+          inp.focus();
         }
       });
     }
@@ -1193,14 +1828,14 @@ const { musicFiles = [] } = Astro.props;
     // Initialize Lenis for smooth scroll
     import('lenis').then(({ default: Lenis }) => {
       lenisInstance = new Lenis({
-        wrapper: overlay,
-        content: document.getElementById('hunt-container'),
+        wrapper: overlay as HTMLElement,
+        content: document.getElementById('hunt-container') as HTMLElement,
         duration: 1.4,
         smoothWheel: true,
         wheelMultiplier: 0.8
       });
 
-      function raf(time) {
+      function raf(time: number) {
         if (lenisInstance) {
           lenisInstance.raf(time);
           requestAnimationFrame(raf);
@@ -1209,9 +1844,10 @@ const { musicFiles = [] } = Astro.props;
       requestAnimationFrame(raf);
 
       // Parallax on scroll
-      lenisInstance.on('scroll', ({ scroll }) => {
+      lenisInstance.on('scroll', ({ scroll }: any) => {
         cards.forEach((card) => {
-          const speed = parseFloat(card.dataset.speed || '0.3');
+          const el = card as HTMLElement;
+          const speed = parseFloat(el.dataset.speed || '0.3');
           const rect = card.getBoundingClientRect();
           const centerY = window.innerHeight / 2;
           const cardCenterY = rect.top + rect.height / 2;
@@ -1234,7 +1870,7 @@ const { musicFiles = [] } = Astro.props;
       const livePhoto = card.querySelector('.live-photo');
       
       // Tilt effect on mouse move
-      card.addEventListener('mousemove', (e) => {
+      card.addEventListener('mousemove', ((e: MouseEvent) => {
         const rect = card.getBoundingClientRect();
         const x = (e.clientX - rect.left) / rect.width - 0.5;
         const y = (e.clientY - rect.top) / rect.height - 0.5;
@@ -1246,7 +1882,7 @@ const { musicFiles = [] } = Astro.props;
           duration: 0.3,
           ease: 'power2.out'
         });
-      });
+      }) as EventListener);
 
       card.addEventListener('mouseleave', () => {
         gsap.to(inner, {
@@ -1291,7 +1927,7 @@ const { musicFiles = [] } = Astro.props;
   // ============================================
   // Render Glitch Puzzle Stage
   // ============================================
-  function renderGlitchPuzzle(stage) {
+  function renderGlitchPuzzle(stage: any) {
     const fragments = stage.linkFragments || [
       'spotify:playlist/37i9dQZ...',
       'youtu.be/dQw4w9...',
@@ -1309,7 +1945,7 @@ const { musicFiles = [] } = Astro.props;
           </div>
           
           <div class="glitch-content">
-            ${fragments.map((frag, i) => `
+            ${fragments.map((frag: string, i: number) => `
               <span class="glitch-fragment" style="animation-delay: ${i * 0.8}s">${frag}</span>
             `).join('')}
             
@@ -1350,6 +1986,18 @@ const { musicFiles = [] } = Astro.props;
 
     if (stageContainer) stageContainer.innerHTML = html;
 
+    // Initialize PASS bypass for glitch puzzle
+    const form = document.getElementById('puzzle-form');
+    const input = document.getElementById('puzzle-input');
+    initPassBypass(() => {
+      if (form && input) {
+        const inp = input as HTMLInputElement;
+        const correctAnswer = Array.isArray(stage.answer) ? stage.answer[0] : stage.answer;
+        inp.value = correctAnswer;
+        form.dispatchEvent(new Event('submit', { cancelable: true }));
+      }
+    });
+
     // Reuse puzzle interactions
     initPuzzleInteractions(stage);
 
@@ -1370,7 +2018,7 @@ const { musicFiles = [] } = Astro.props;
   // ============================================
   // Render Crossword Stage
   // ============================================
-  function renderCrossword(stage) {
+  function renderCrossword(stage: any) {
     const grid = stage.grid || [
       ['L', 'O', 'V', 'E'],
       ['#', '#', '#', '#'],
@@ -1387,7 +2035,7 @@ const { musicFiles = [] } = Astro.props;
     
     // Create clue number map
     let clueNum = 1;
-    const clueNumbers = {};
+    const clueNumbers: Record<string, number> = {};
     for (let r = 0; r < rows; r++) {
       for (let c = 0; c < cols; c++) {
         if (grid[r][c] !== '#') {
@@ -1408,7 +2056,7 @@ const { musicFiles = [] } = Astro.props;
         </div>
         
         <div class="crossword-grid" id="crossword-grid" style="display:grid; grid-template-columns: repeat(${cols}, 2.5rem); gap:2px;">
-          ${grid.map((row, r) => row.map((cell, c) => {
+          ${grid.map((row: string[], r: number) => row.map((cell: string, c: number) => {
             if (cell === '#') {
               return `<div class="crossword-cell blocked"></div>`;
             }
@@ -1426,12 +2074,12 @@ const { musicFiles = [] } = Astro.props;
         <div class="crossword-clues-wrapper">
           <div class="crossword-clues-section">
             <h3>Across</h3>
-            <ul>${acrossClues.map(c => `<li><span class="clue-num">${c.num}.</span> ${c.clue}</li>`).join('')}</ul>
+            <ul>${acrossClues.map((c: any) => `<li><span class="clue-num">${c.num}.</span> ${c.clue}</li>`).join('')}</ul>
           </div>
           ${downClues.length > 0 ? `
             <div class="crossword-clues-section">
               <h3>Down</h3>
-              <ul>${downClues.map(c => `<li><span class="clue-num">${c.num}.</span> ${c.clue}</li>`).join('')}</ul>
+              <ul>${downClues.map((c: any) => `<li><span class="clue-num">${c.num}.</span> ${c.clue}</li>`).join('')}</ul>
             </div>
           ` : ''}
         </div>
@@ -1450,13 +2098,13 @@ const { musicFiles = [] } = Astro.props;
     const gridEl = document.getElementById('crossword-grid');
     if (gridEl) {
       gridEl.querySelectorAll('.crossword-cell-input').forEach((input) => {
-        const inp = input;
+        const inp = input as HTMLInputElement;
         inp.addEventListener('input', () => {
           if (inp.value.length === 1) {
             const r = parseInt(inp.dataset.row || '0');
             const c = parseInt(inp.dataset.col || '0');
-            const next = gridEl.querySelector(`input[data-row="${r}"][data-col="${c + 1}"]`) ||
-                         gridEl.querySelector(`input[data-row="${r + 1}"][data-col="0"]`);
+            const next = gridEl.querySelector(`input[data-row="${r}"][data-col="${c + 1}"]`) as HTMLInputElement ||
+                         gridEl.querySelector(`input[data-row="${r + 1}"][data-col="0"]`) as HTMLInputElement;
             if (next) next.focus();
           }
         });
@@ -1468,13 +2116,14 @@ const { musicFiles = [] } = Astro.props;
       const inputs = stageContainer?.querySelectorAll('.crossword-cell-input') || [];
       let allCorrect = true;
       inputs.forEach((inp) => {
-        const answer = inp.dataset.answer?.toUpperCase() || '';
-        const value = inp.value?.toUpperCase() || '';
-        inp.classList.remove('correct', 'incorrect');
+        const input = inp as HTMLInputElement;
+        const answer = input.dataset.answer?.toUpperCase() || '';
+        const value = input.value?.toUpperCase() || '';
+        input.classList.remove('correct', 'incorrect');
         if (value === answer) {
-          inp.classList.add('correct');
+          input.classList.add('correct');
         } else {
-          inp.classList.add('incorrect');
+          input.classList.add('incorrect');
           allCorrect = false;
         }
       });
@@ -1491,9 +2140,22 @@ const { musicFiles = [] } = Astro.props;
       }
     });
 
+    // Initialize PASS bypass for crossword
+    initPassBypass(() => {
+      // Auto-fill all correct answers
+      const inputs = stageContainer?.querySelectorAll('.crossword-cell-input') || [];
+      inputs.forEach((inp) => {
+        const input = inp as HTMLInputElement;
+        const answer = input.dataset.answer?.toUpperCase() || '';
+        input.value = answer;
+      });
+      // Trigger check to mark as complete
+      document.getElementById('crossword-check')?.click();
+    });
+
     document.getElementById('crossword-complete')?.addEventListener('click', async () => {
       if (currentStageIndex < huntStages.length - 1) {
-        await goToStage(currentStageIndex + 1);
+        await goToStage(currentStageIndex + 1, 'next');
       }
     });
   }
@@ -1507,7 +2169,7 @@ const { musicFiles = [] } = Astro.props;
 
     btn.addEventListener('click', async () => {
       if (currentStageIndex < huntStages.length - 1) {
-        await goToStage(currentStageIndex + 1);
+        await goToStage(currentStageIndex + 1, 'next');
       }
     });
   }
@@ -1515,7 +2177,7 @@ const { musicFiles = [] } = Astro.props;
   // ============================================
   // Date Gate
   // ============================================
-  function renderDateGate(stage) {
+  function renderDateGate(stage: any) {
     const unlockDate = new Date(stage.unlockDate);
     const now = new Date();
     const isUnlocked = now >= unlockDate;
@@ -1525,7 +2187,7 @@ const { musicFiles = [] } = Astro.props;
       saveProgress();
       updateNavigation();
       if (currentStageIndex < huntStages.length - 1) {
-        goToStage(currentStageIndex + 1);
+        goToStage(currentStageIndex + 1, 'next');
       }
       return;
     }
@@ -1583,7 +2245,7 @@ const { musicFiles = [] } = Astro.props;
         solvedStages.add(currentStageIndex);
         saveProgress();
         if (currentStageIndex < huntStages.length - 1) {
-          goToStage(currentStageIndex + 1);
+          goToStage(currentStageIndex + 1, 'next');
         }
         return;
       }
@@ -1603,7 +2265,7 @@ const { musicFiles = [] } = Astro.props;
   // ============================================
   // Video Reveal
   // ============================================
-  function renderVideoReveal(stage) {
+  function renderVideoReveal(stage: any) {
     const html = `
       <div class="video-reveal">
         <h2 class="video-title" id="video-title"></h2>
@@ -1637,9 +2299,956 @@ const { musicFiles = [] } = Astro.props;
   }
 
   // ============================================
+  // Render Responsive Squeeze Puzzle
+  // ============================================
+  function renderResponsiveSqueeze(stage: any) {
+    const html = `
+      <div class="responsive-squeeze-puzzle">
+        <div class="squeeze-card terminal-frame">
+          <div class="terminal-header">
+            <div class="terminal-dots">
+              <span class="dot red"></span>
+              <span class="dot yellow"></span>
+              <span class="dot green"></span>
+            </div>
+            <span class="terminal-title">✧ responsive challenge ✧</span>
+          </div>
+          <div class="terminal-content">
+            <div class="puzzle-prompt" id="squeeze-prompt"></div>
+            <div class="puzzle-subtext" id="squeeze-subtext"></div>
+            
+            <div id="squeeze-status" class="squeeze-status">
+              <p>Current window width: <span id="current-width">0</span>px</p>
+              <p class="squeeze-hint">Make it narrower...</p>
+            </div>
+            
+            <div id="squeeze-reveal" class="squeeze-reveal" style="display: none;">
+              <div class="reveal-code">
+                <p class="reveal-label">Your code:</p>
+                <p class="reveal-value">${stage.code || 'CLOSER'}</p>
+              </div>
+              <button class="continue-btn" id="squeeze-continue">Continue →</button>
+            </div>
+            
+            ${stage.hint ? `
+              <div class="hint-container">
+                <button type="button" class="hint-toggle" id="hint-toggle">need a hint?</button>
+                <div class="hint-text" id="hint-text">${stage.hint}</div>
+              </div>
+            ` : ''}
+          </div>
+        </div>
+      </div>
+    `;
+
+    if (stageContainer) stageContainer.innerHTML = html;
+
+    const promptEl = document.getElementById('squeeze-prompt');
+    const subtextEl = document.getElementById('squeeze-subtext');
+    const widthEl = document.getElementById('current-width');
+    const statusEl = document.getElementById('squeeze-status');
+    const revealEl = document.getElementById('squeeze-reveal');
+    const hintToggle = document.getElementById('hint-toggle');
+    const hintText = document.getElementById('hint-text');
+    const continueBtn = document.getElementById('squeeze-continue');
+
+    // Typewriter effects
+    if (promptEl && stage.prompt) {
+      typewriterEffect(promptEl, stage.prompt, 40, () => {
+        if (subtextEl && stage.subtext) {
+          typewriterEffect(subtextEl, stage.subtext, 25);
+        }
+      });
+    }
+
+    // Hint toggle
+    if (hintToggle && hintText) {
+      hintToggle.addEventListener('click', () => {
+        hintText.classList.toggle('visible');
+        hintToggle.textContent = hintText.classList.contains('visible') ? 'hide hint' : 'need a hint?';
+      });
+    }
+
+    // Window resize listener
+    const targetWidth = stage.targetWidth || 500;
+    let hasRevealed = false;
+
+    function checkWidth() {
+      const width = window.innerWidth;
+      if (widthEl) widthEl.textContent = width.toString();
+
+      if (width < targetWidth && !hasRevealed) {
+        hasRevealed = true;
+        solvedStages.add(currentStageIndex);
+        saveProgress();
+        updateNavigation();
+
+        // Show success message
+        showSuccessMessage(stage.successMessage || 'Perfect! ♡').then(() => {
+          // Reveal code
+          if (statusEl) statusEl.style.display = 'none';
+          if (revealEl) revealEl.style.display = 'block';
+          
+          gsap.from(revealEl, {
+            opacity: 0,
+            y: 20,
+            duration: 0.6,
+            ease: 'power2.out'
+          });
+        });
+      }
+    }
+
+    checkWidth();
+    window.addEventListener('resize', checkWidth);
+
+    // Initialize PASS bypass for responsive squeeze
+    initPassBypass(() => {
+      // Trigger the win condition
+      hasRevealed = true;
+      solvedStages.add(currentStageIndex);
+      saveProgress();
+      updateNavigation();
+
+      showSuccessMessage(stage.successMessage || 'Perfect! ♡').then(() => {
+        if (statusEl) statusEl.style.display = 'none';
+        if (revealEl) revealEl.style.display = 'block';
+        
+        gsap.from(revealEl, {
+          opacity: 0,
+          y: 20,
+          duration: 0.6,
+          ease: 'power2.out'
+        });
+      });
+    });
+
+    // Continue button
+    if (continueBtn) {
+      continueBtn.addEventListener('click', async () => {
+        window.removeEventListener('resize', checkWidth);
+        if (currentStageIndex < huntStages.length - 1) {
+          await goToStage(currentStageIndex + 1, 'next');
+        }
+      });
+    }
+  }
+
+  // ============================================
+  // Render Emoji Puzzle
+  // ============================================
+  function renderEmojiPuzzle(stage: any) {
+    const puzzles = stage.puzzles || [];
+    
+    const html = `
+      <div class="emoji-puzzle">
+        <div class="emoji-card terminal-frame">
+          <div class="terminal-header">
+            <div class="terminal-dots">
+              <span class="dot red"></span>
+              <span class="dot yellow"></span>
+              <span class="dot green"></span>
+            </div>
+            <span class="terminal-title">✧ emoji decoder ✧</span>
+          </div>
+          <div class="terminal-content">
+            <div class="puzzle-prompt" id="emoji-prompt"></div>
+            <div class="puzzle-subtext" id="emoji-subtext"></div>
+            
+            <div class="emoji-puzzles-container">
+              ${puzzles.map((p: any, i: number) => `
+                <div class="emoji-puzzle-item" data-index="${i}">
+                  <div class="emoji-sequence">${p.emojis}</div>
+                  <div class="emoji-equals">=</div>
+                  <input 
+                    type="text" 
+                    class="emoji-input puzzle-input" 
+                    data-answer="${p.answer.toLowerCase()}"
+                    placeholder="${p.placeholder || 'Enter answer...'}"
+                    autocomplete="off"
+                    autocorrect="off"
+                    spellcheck="false"
+                  />
+                  <span class="emoji-check">✓</span>
+                </div>
+              `).join('')}
+            </div>
+            
+            <button class="puzzle-submit" id="emoji-submit">Submit All</button>
+            <div class="puzzle-error" id="emoji-error"></div>
+            
+            ${stage.hint ? `
+              <div class="hint-container">
+                <button type="button" class="hint-toggle" id="hint-toggle">need a hint?</button>
+                <div class="hint-text" id="hint-text">${stage.hint}</div>
+              </div>
+            ` : ''}
+          </div>
+        </div>
+      </div>
+    `;
+
+    if (stageContainer) stageContainer.innerHTML = html;
+
+    const promptEl = document.getElementById('emoji-prompt');
+    const subtextEl = document.getElementById('emoji-subtext');
+    const submitBtn = document.getElementById('emoji-submit');
+    const errorEl = document.getElementById('emoji-error');
+    const hintToggle = document.getElementById('hint-toggle');
+    const hintText = document.getElementById('hint-text');
+
+    // Typewriter effects
+    if (promptEl && stage.prompt) {
+      typewriterEffect(promptEl, stage.prompt, 40, () => {
+        if (subtextEl && stage.subtext) {
+          typewriterEffect(subtextEl, stage.subtext, 25);
+        }
+      });
+    }
+
+    // Hint toggle
+    if (hintToggle && hintText) {
+      hintToggle.addEventListener('click', () => {
+        hintText.classList.toggle('visible');
+        hintToggle.textContent = hintText.classList.contains('visible') ? 'hide hint' : 'need a hint?';
+      });
+    }
+
+    // Submit handler
+    if (submitBtn) {
+      submitBtn.addEventListener('click', async () => {
+        const inputs = stageContainer?.querySelectorAll('.emoji-input') || [];
+        let allCorrect = true;
+
+        inputs.forEach((input) => {
+          const inp = input as HTMLInputElement;
+          const answer = inp.dataset.answer || '';
+          const value = inp.value.toLowerCase().trim();
+          const parent = inp.closest('.emoji-puzzle-item');
+          
+          if (value === answer) {
+            parent?.classList.add('correct');
+            parent?.classList.remove('incorrect');
+          } else {
+            parent?.classList.add('incorrect');
+            parent?.classList.remove('correct');
+            allCorrect = false;
+          }
+        });
+
+        if (allCorrect) {
+          solvedStages.add(currentStageIndex);
+          saveProgress();
+          updateNavigation();
+          await showSuccessMessage(stage.successMessage || 'You decoded them all! ♡');
+          
+          if (currentStageIndex < huntStages.length - 1) {
+            await goToStage(currentStageIndex + 1, 'next');
+          }
+        } else {
+          // Error shake
+          gsap.to('.emoji-card', {
+            x: -8,
+            duration: 0.4,
+            ease: 'power2.inOut',
+            repeat: 3,
+            yoyo: true
+          });
+          
+          if (errorEl) {
+            errorEl.textContent = 'Some answers need fixing...';
+            errorEl.style.opacity = '1';
+          }
+        }
+      });
+    }
+
+    // Initialize PASS bypass for emoji puzzle
+    const emojiPuzzles = stage.puzzles || [];
+    initPassBypass(() => {
+      // Auto-fill all correct answers
+      const inputs = stageContainer?.querySelectorAll('.emoji-input') || [];
+      inputs.forEach((input, index) => {
+        const inp = input as HTMLInputElement;
+        if (emojiPuzzles[index]) {
+          inp.value = emojiPuzzles[index].answer;
+        }
+      });
+      // Trigger submit
+      submitBtn?.click();
+    });
+  }
+
+  // ============================================
+  // Render Invisible Ink Puzzle
+  // ============================================
+  function renderInvisibleInk(stage: any) {
+    const html = `
+      <div class="invisible-ink-puzzle">
+        <div class="ink-card terminal-frame">
+          <div class="terminal-header">
+            <div class="terminal-dots">
+              <span class="dot red"></span>
+              <span class="dot yellow"></span>
+              <span class="dot green"></span>
+            </div>
+            <span class="terminal-title">✧ hidden message ✧</span>
+          </div>
+          <div class="terminal-content">
+            <div class="puzzle-prompt" id="ink-prompt"></div>
+            <div class="puzzle-subtext" id="ink-subtext"></div>
+            
+            <div class="invisible-text-container" id="invisible-container">
+              <p class="invisible-text" id="invisible-text">${stage.hiddenText || 'Hidden message here'}</p>
+            </div>
+            
+            <form class="puzzle-form" id="ink-form" style="display: none;">
+              <div class="puzzle-input-wrapper">
+                <span class="puzzle-cursor">♡</span>
+                <input 
+                  type="text" 
+                  id="ink-input" 
+                  class="puzzle-input"
+                  placeholder="Enter the code you found..."
+                  autocomplete="off"
+                  autocorrect="off"
+                  spellcheck="false"
+                />
+                <button type="submit" class="puzzle-submit">Submit</button>
+              </div>
+              <div class="puzzle-error" id="ink-error"></div>
+            </form>
+            
+            ${stage.hint ? `
+              <div class="hint-container">
+                <button type="button" class="hint-toggle" id="hint-toggle">need a hint?</button>
+                <div class="hint-text" id="hint-text">${stage.hint}</div>
+              </div>
+            ` : ''}
+          </div>
+        </div>
+      </div>
+    `;
+
+    if (stageContainer) stageContainer.innerHTML = html;
+
+    const promptEl = document.getElementById('ink-prompt');
+    const subtextEl = document.getElementById('ink-subtext');
+    const invisibleEl = document.getElementById('invisible-text');
+    const formEl = document.getElementById('ink-form');
+    const inputEl = document.getElementById('ink-input');
+    const errorEl = document.getElementById('ink-error');
+    const hintToggle = document.getElementById('hint-toggle');
+    const hintText = document.getElementById('hint-text');
+
+    // Typewriter effects
+    if (promptEl && stage.prompt) {
+      typewriterEffect(promptEl, stage.prompt, 40, () => {
+        if (subtextEl && stage.subtext) {
+          typewriterEffect(subtextEl, stage.subtext, 25);
+        }
+      });
+    }
+
+    // Hint toggle
+    if (hintToggle && hintText) {
+      hintToggle.addEventListener('click', () => {
+        hintText.classList.toggle('visible');
+        hintToggle.textContent = hintText.classList.contains('visible') ? 'hide hint' : 'need a hint?';
+      });
+    }
+
+    // Reveal text on selection/highlight
+    let hasRevealed = false;
+    if (invisibleEl) {
+      invisibleEl.addEventListener('mouseup', () => {
+        if (!hasRevealed && (window.getSelection()?.toString().length || 0) > 0) {
+          hasRevealed = true;
+          invisibleEl.classList.add('revealed');
+          
+          gsap.to(invisibleEl, {
+            color: 'var(--hunt-primary)',
+            duration: 0.5,
+            ease: 'power2.out'
+          });
+
+          // Show input form after revealing
+          setTimeout(() => {
+            if (formEl) {
+              formEl.style.display = 'block';
+              gsap.from(formEl, {
+                opacity: 0,
+                y: 20,
+                duration: 0.5,
+                ease: 'power2.out'
+              });
+              inputEl?.focus();
+            }
+          }, 800);
+        }
+      });
+    }
+
+    // Form submission
+    if (formEl && inputEl) {
+      formEl.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        const inp = inputEl as HTMLInputElement;
+        const userAnswer = inp.value.toLowerCase().trim();
+        const correctAnswer = (stage.code || 'reveal').toLowerCase().trim();
+
+        if (userAnswer === correctAnswer) {
+          solvedStages.add(currentStageIndex);
+          saveProgress();
+          updateNavigation();
+          await showSuccessMessage(stage.successMessage || 'You found it! ♡');
+          
+          if (currentStageIndex < huntStages.length - 1) {
+            await goToStage(currentStageIndex + 1, 'next');
+          }
+        } else {
+          // Error shake
+          gsap.to('.ink-card', {
+            x: -8,
+            duration: 0.4,
+            ease: 'power2.inOut',
+            repeat: 3,
+            yoyo: true
+          });
+          
+          if (errorEl) {
+            errorEl.textContent = 'Not quite... try again ♡';
+            errorEl.style.opacity = '1';
+          }
+          
+          inp.value = '';
+          inp.focus();
+        }
+      });
+    }
+
+    // Initialize PASS bypass for invisible ink
+    initPassBypass(() => {
+      // Auto-reveal and submit
+      if (invisibleEl) {
+        hasRevealed = true;
+        invisibleEl.classList.add('revealed');
+        gsap.to(invisibleEl, {
+          color: 'var(--hunt-primary)',
+          duration: 0.5,
+          ease: 'power2.out'
+        });
+      }
+      
+      setTimeout(() => {
+        if (formEl && inputEl) {
+          formEl.style.display = 'block';
+          const inp = inputEl as HTMLInputElement;
+          inp.value = stage.code || 'reveal';
+          formEl.dispatchEvent(new Event('submit', { cancelable: true }));
+        }
+      }, 100);
+    });
+  }
+
+  // ============================================
+  // Render Love Wordle Puzzle
+  // ============================================
+  function renderLoveWordle(stage: any) {
+    const answer = (stage.answer || 'SMILE').toUpperCase();
+    const maxAttempts = 6;
+    let currentAttempt = 0;
+    let currentGuess = '';
+
+    const html = `
+      <div class="love-wordle-puzzle">
+        <div class="wordle-card terminal-frame">
+          <div class="terminal-header">
+            <div class="terminal-dots">
+              <span class="dot red"></span>
+              <span class="dot yellow"></span>
+              <span class="dot green"></span>
+            </div>
+            <span class="terminal-title">✧ love wordle ✧</span>
+          </div>
+          <div class="terminal-content">
+            <div class="puzzle-prompt" id="wordle-prompt"></div>
+            <div class="puzzle-subtext" id="wordle-subtext"></div>
+            
+            <div class="wordle-grid" id="wordle-grid">
+              ${Array.from({ length: maxAttempts }, (_, i) => `
+                <div class="wordle-row" data-row="${i}">
+                  ${Array.from({ length: answer.length }, () => `
+                    <div class="wordle-cell"></div>
+                  `).join('')}
+                </div>
+              `).join('')}
+            </div>
+            
+            <div class="wordle-keyboard" id="wordle-keyboard"></div>
+            
+            <div class="wordle-status" id="wordle-status"></div>
+            
+            ${stage.hint ? `
+              <div class="hint-container">
+                <button type="button" class="hint-toggle" id="hint-toggle">need a hint?</button>
+                <div class="hint-text" id="hint-text">${stage.hint}</div>
+              </div>
+            ` : ''}
+          </div>
+        </div>
+      </div>
+    `;
+
+    if (stageContainer) stageContainer.innerHTML = html;
+
+    const promptEl = document.getElementById('wordle-prompt');
+    const subtextEl = document.getElementById('wordle-subtext');
+    const gridEl = document.getElementById('wordle-grid');
+    const keyboardEl = document.getElementById('wordle-keyboard');
+    const statusEl = document.getElementById('wordle-status');
+    const hintToggle = document.getElementById('hint-toggle');
+    const hintText = document.getElementById('hint-text');
+
+    // Typewriter effects
+    if (promptEl && stage.prompt) {
+      typewriterEffect(promptEl, stage.prompt, 40, () => {
+        if (subtextEl && stage.subtext) {
+          typewriterEffect(subtextEl, stage.subtext, 25);
+        }
+      });
+    }
+
+    // Hint toggle
+    if (hintToggle && hintText) {
+      hintToggle.addEventListener('click', () => {
+        hintText.classList.toggle('visible');
+        hintToggle.textContent = hintText.classList.contains('visible') ? 'hide hint' : 'need a hint?';
+      });
+    }
+
+    // Create keyboard
+    const keyboard = 'QWERTYUIOPASDFGHJKLZXCVBNM'.split('');
+    if (keyboardEl) {
+      keyboardEl.innerHTML = keyboard.map(letter => 
+        `<button class="wordle-key" data-key="${letter}">${letter}</button>`
+      ).join('') + 
+      `<button class="wordle-key wordle-key-enter" data-key="ENTER">ENTER</button>
+       <button class="wordle-key wordle-key-back" data-key="BACK">⌫</button>`;
+    }
+
+    // Handle key press
+    function handleKey(key: string) {
+      if (key === 'ENTER') {
+        if (currentGuess.length === answer.length) {
+          submitGuess();
+        }
+      } else if (key === 'BACK') {
+        currentGuess = currentGuess.slice(0, -1);
+        updateCurrentRow();
+      } else if (currentGuess.length < answer.length && /^[A-Z]$/.test(key)) {
+        currentGuess += key;
+        updateCurrentRow();
+      }
+    }
+
+    // Update current row
+    function updateCurrentRow() {
+      if (!gridEl) return;
+      const row = gridEl.querySelector(`[data-row="${currentAttempt}"]`);
+      if (!row) return;
+      
+      const cells = row.querySelectorAll('.wordle-cell');
+      cells.forEach((cell, i) => {
+        cell.textContent = currentGuess[i] || '';
+      });
+    }
+
+    // Submit guess
+    async function submitGuess() {
+      if (!gridEl) return;
+      const row = gridEl.querySelector(`[data-row="${currentAttempt}"]`);
+      if (!row) return;
+      
+      const cells = row.querySelectorAll('.wordle-cell');
+      const guessArray = currentGuess.split('');
+      const answerArray = answer.split('');
+      const used = new Array(answer.length).fill(false);
+
+      // First pass: mark correct positions
+      cells.forEach((cell, i) => {
+        if (guessArray[i] === answerArray[i]) {
+          cell.classList.add('correct');
+          used[i] = true;
+        }
+      });
+
+      // Second pass: mark present letters
+      cells.forEach((cell, i) => {
+        if (!cell.classList.contains('correct')) {
+          const letterIndex = answerArray.findIndex((l: string, idx: number) => l === guessArray[i] && !used[idx]);
+          if (letterIndex !== -1) {
+            cell.classList.add('present');
+            used[letterIndex] = true;
+          } else {
+            cell.classList.add('absent');
+          }
+        }
+      });
+
+      // Animate cells
+      cells.forEach((cell, i) => {
+        gsap.from(cell, {
+          rotateX: 90,
+          duration: 0.3,
+          delay: i * 0.1,
+          ease: 'power2.out'
+        });
+      });
+
+      // Check win
+      if (currentGuess === answer) {
+        solvedStages.add(currentStageIndex);
+        saveProgress();
+        updateNavigation();
+        
+        await showSuccessMessage(stage.successMessage || 'You got it! ♡');
+        
+        if (currentStageIndex < huntStages.length - 1) {
+          await goToStage(currentStageIndex + 1, 'next');
+        }
+        return;
+      }
+
+      // Check loss
+      currentAttempt++;
+      if (currentAttempt >= maxAttempts) {
+        if (statusEl) {
+          statusEl.textContent = `The word was: ${answer}. Try again!`;
+          statusEl.style.opacity = '1';
+        }
+        
+        // Allow reset
+        setTimeout(() => {
+          currentAttempt = 0;
+          currentGuess = '';
+          if (gridEl) {
+            gridEl.querySelectorAll('.wordle-cell').forEach(cell => {
+              cell.textContent = '';
+              cell.className = 'wordle-cell';
+            });
+          }
+          if (statusEl) statusEl.style.opacity = '0';
+        }, 3000);
+      } else {
+        currentGuess = '';
+      }
+    }
+
+    // Keyboard click handlers
+    keyboardEl?.querySelectorAll('.wordle-key').forEach(key => {
+      key.addEventListener('click', () => {
+        const btn = key as HTMLElement;
+        const k = btn.dataset.key || '';
+        handleKey(k);
+      });
+    });
+
+    // Physical keyboard
+    document.addEventListener('keydown', (e) => {
+      if (!isActive) return;
+      
+      const key = e.key.toUpperCase();
+      if (key === 'ENTER') {
+        handleKey('ENTER');
+      } else if (key === 'BACKSPACE') {
+        handleKey('BACK');
+      } else if (/^[A-Z]$/.test(key)) {
+        handleKey(key);
+      }
+    });
+
+    // Initialize PASS bypass for wordle
+    initPassBypass(() => {
+      // Auto-complete with the correct answer
+      const answer = (stage.answer || 'SMILE').toUpperCase();
+      currentGuess = answer;
+      submitGuess();
+    });
+  }
+
+  // ============================================
+  // Render Fake 404 Puzzle
+  // ============================================
+  function renderFake404(stage: any) {
+    const html = `
+      <div class="fake-404-puzzle">
+        <div class="error-404-container">
+          <div class="error-code">404</div>
+          <div class="error-title" id="error-title"></div>
+          <div class="error-subtext" id="error-subtext"></div>
+          
+          <form class="puzzle-form" id="error-form">
+            <div class="puzzle-input-wrapper">
+              <span class="puzzle-cursor">♡</span>
+              <input 
+                type="text" 
+                id="error-input" 
+                class="puzzle-input"
+                placeholder="${stage.inputPlaceholder || 'Enter code...'}"
+                autocomplete="off"
+                autocorrect="off"
+                spellcheck="false"
+              />
+              <button type="submit" class="puzzle-submit">Submit</button>
+            </div>
+            <div class="puzzle-error" id="error-error"></div>
+          </form>
+          
+          ${stage.hint ? `
+            <div class="hint-container">
+              <button type="button" class="hint-toggle" id="hint-toggle">need a hint?</button>
+              <div class="hint-text" id="hint-text">${stage.hint}</div>
+            </div>
+          ` : ''}
+        </div>
+      </div>
+    `;
+
+    if (stageContainer) stageContainer.innerHTML = html;
+
+    const titleEl = document.getElementById('error-title');
+    const subtextEl = document.getElementById('error-subtext');
+    const formEl = document.getElementById('error-form');
+    const inputEl = document.getElementById('error-input');
+    const errorEl = document.getElementById('error-error');
+    const hintToggle = document.getElementById('hint-toggle');
+    const hintText = document.getElementById('hint-text');
+
+    // Typewriter effects
+    if (titleEl && stage.prompt) {
+      typewriterEffect(titleEl, stage.prompt, 40, () => {
+        if (subtextEl && stage.subtext) {
+          typewriterEffect(subtextEl, stage.subtext, 25, () => {
+            inputEl?.focus();
+          });
+        }
+      });
+    }
+
+    // Hint toggle
+    if (hintToggle && hintText) {
+      hintToggle.addEventListener('click', () => {
+        hintText.classList.toggle('visible');
+        hintToggle.textContent = hintText.classList.contains('visible') ? 'hide hint' : 'need a hint?';
+      });
+    }
+
+    // Form submission
+    if (formEl && inputEl) {
+      formEl.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        const inp = inputEl as HTMLInputElement;
+        const userAnswer = inp.value.toLowerCase().trim();
+        const correctAnswer = (stage.answer || 'forever').toLowerCase().trim();
+
+        if (userAnswer === correctAnswer) {
+          solvedStages.add(currentStageIndex);
+          saveProgress();
+          updateNavigation();
+          await showSuccessMessage(stage.successMessage || 'Correct! ♡');
+          
+          if (currentStageIndex < huntStages.length - 1) {
+            await goToStage(currentStageIndex + 1, 'next');
+          }
+        } else {
+          // Error shake
+          gsap.to('.error-404-container', {
+            x: -8,
+            duration: 0.4,
+            ease: 'power2.inOut',
+            repeat: 3,
+            yoyo: true
+          });
+          
+          if (errorEl) {
+            errorEl.textContent = 'Not quite... try again ♡';
+            errorEl.style.opacity = '1';
+          }
+          
+          inp.value = '';
+          inp.focus();
+        }
+      });
+    }
+
+    // Initialize PASS bypass for fake 404
+    initPassBypass(() => {
+      if (formEl && inputEl) {
+        const inp = inputEl as HTMLInputElement;
+        inp.value = stage.answer || 'forever';
+        formEl.dispatchEvent(new Event('submit', { cancelable: true }));
+      }
+    });
+  }
+
+  // ============================================
+  // Render Captcha Puzzle
+  // ============================================
+  function renderCaptchaPuzzle(stage: any) {
+    const images = stage.images || [];
+    const selected = new Set<number>();
+
+    const html = `
+      <div class="captcha-puzzle">
+        <div class="captcha-card terminal-frame">
+          <div class="terminal-header">
+            <div class="terminal-dots">
+              <span class="dot red"></span>
+              <span class="dot yellow"></span>
+              <span class="dot green"></span>
+            </div>
+            <span class="terminal-title">✧ girlfriend verification ✧</span>
+          </div>
+          <div class="terminal-content">
+            <div class="puzzle-prompt" id="captcha-prompt"></div>
+            <div class="puzzle-subtext" id="captcha-subtext"></div>
+            
+            <div class="captcha-grid" id="captcha-grid">
+              ${images.map((img: any, i: number) => `
+                <div class="captcha-image-container" data-index="${i}" data-correct="${img.isCorrect}">
+                  <img src="${img.url}" alt="Photo ${i + 1}" 
+                       onerror="this.src='https://picsum.photos/200?random=${i}'" />
+                  <div class="captcha-overlay">
+                    <div class="captcha-checkmark">✓</div>
+                  </div>
+                </div>
+              `).join('')}
+            </div>
+            
+            <button class="puzzle-submit" id="captcha-submit">Verify</button>
+            <div class="puzzle-error" id="captcha-error"></div>
+            
+            ${stage.hint ? `
+              <div class="hint-container">
+                <button type="button" class="hint-toggle" id="hint-toggle">need a hint?</button>
+                <div class="hint-text" id="hint-text">${stage.hint}</div>
+              </div>
+            ` : ''}
+          </div>
+        </div>
+      </div>
+    `;
+
+    if (stageContainer) stageContainer.innerHTML = html;
+
+    const promptEl = document.getElementById('captcha-prompt');
+    const subtextEl = document.getElementById('captcha-subtext');
+    const gridEl = document.getElementById('captcha-grid');
+    const submitBtn = document.getElementById('captcha-submit');
+    const errorEl = document.getElementById('captcha-error');
+    const hintToggle = document.getElementById('hint-toggle');
+    const hintText = document.getElementById('hint-text');
+
+    // Typewriter effects
+    if (promptEl && stage.prompt) {
+      typewriterEffect(promptEl, stage.prompt, 40, () => {
+        if (subtextEl && stage.subtext) {
+          typewriterEffect(subtextEl, stage.subtext, 25);
+        }
+      });
+    }
+
+    // Hint toggle
+    if (hintToggle && hintText) {
+      hintToggle.addEventListener('click', () => {
+        hintText.classList.toggle('visible');
+        hintToggle.textContent = hintText.classList.contains('visible') ? 'hide hint' : 'need a hint?';
+      });
+    }
+
+    // Image selection
+    gridEl?.querySelectorAll('.captcha-image-container').forEach(container => {
+      container.addEventListener('click', () => {
+        const div = container as HTMLElement;
+        const index = parseInt(div.dataset.index || '0');
+        
+        if (selected.has(index)) {
+          selected.delete(index);
+          container.classList.remove('selected');
+        } else {
+          selected.add(index);
+          container.classList.add('selected');
+        }
+      });
+    });
+
+    // Submit handler
+    if (submitBtn) {
+      submitBtn.addEventListener('click', async () => {
+        // Check if selection matches correct images
+        const correctIndices = images
+          .map((img: any, i: number) => img.isCorrect ? i : -1)
+          .filter((i: number) => i !== -1);
+        
+        const selectedArray = Array.from(selected).sort();
+        const correctArray = correctIndices.sort();
+        
+        const isCorrect = selectedArray.length === correctArray.length &&
+                         selectedArray.every((val, i) => val === correctArray[i]);
+
+        if (isCorrect) {
+          solvedStages.add(currentStageIndex);
+          saveProgress();
+          updateNavigation();
+          await showSuccessMessage(stage.successMessage || 'Identity verified! ♡');
+          
+          if (currentStageIndex < huntStages.length - 1) {
+            await goToStage(currentStageIndex + 1, 'next');
+          }
+        } else {
+          // Error shake
+          gsap.to('.captcha-card', {
+            x: -8,
+            duration: 0.4,
+            ease: 'power2.inOut',
+            repeat: 3,
+            yoyo: true
+          });
+          
+          if (errorEl) {
+            errorEl.textContent = 'Not quite... try again ♡';
+            errorEl.style.opacity = '1';
+          }
+        }
+      });
+    }
+
+    // Initialize PASS bypass for captcha
+    initPassBypass(() => {
+      // Auto-select all correct images
+      const correctIndices = images
+        .map((img: any, i: number) => img.isCorrect ? i : -1)
+        .filter((i: number) => i !== -1);
+      
+      selected.clear();
+      correctIndices.forEach((index: number) => {
+        selected.add(index);
+        const container = gridEl?.querySelector(`[data-index="${index}"]`);
+        container?.classList.add('selected');
+      });
+      
+      // Trigger submit
+      submitBtn?.click();
+    });
+  }
+
+  // ============================================
   // Typewriter Effect
   // ============================================
-  function typewriterEffect(element, text, speed = 50, callback = null) {
+  function typewriterEffect(element: HTMLElement | null, text: string, speed = 50, callback: (() => void) | null = null) {
     if (!element || !text) {
       if (callback) callback();
       return;

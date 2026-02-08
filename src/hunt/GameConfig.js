@@ -176,10 +176,112 @@ export const huntStages = [
   },
 
   // ──────────────────────────────────────────
-  // STAGE 7: Date Gate (Anniversary Lock)
+  // STAGE 7: The "Responsive Squeeze" (Browser Window)
   // ──────────────────────────────────────────
   {
     id: 7,
+    type: 'responsive_squeeze',
+    prompt: "✧ Bridging the Distance ✧",
+    subtext: "The world is too big. Shrink the window to bring us closer.",
+    hint: "Try making your browser window narrower... like mobile width.",
+    code: "CLOSER",
+    targetWidth: 500,
+    successMessage: "No distance can keep us apart ♡"
+  },
+
+  // ──────────────────────────────────────────
+  // STAGE 8: The "Emoji" Encryption
+  // ──────────────────────────────────────────
+  {
+    id: 8,
+    type: 'emoji_puzzle',
+    prompt: "✧ Decode Our Memories ✧",
+    subtext: "Each emoji sequence tells a story. Can you remember?",
+    puzzles: [
+      {
+        emojis: "🌧️ + ☕ + 🇬🇧",
+        answer: "london coffee",
+        placeholder: "Enter the memory..."
+      },
+      {
+        emojis: "🥘 + 🌶️ + 🥵",
+        answer: "mirchi ka salan",
+        placeholder: "That spicy dish..."
+      }
+    ],
+    hint: "Think about our adventures together...",
+    successMessage: "You remember everything ♡"
+  },
+
+  // ──────────────────────────────────────────
+  // STAGE 9: The "Invisible Ink" (Highlight to Reveal)
+  // ──────────────────────────────────────────
+  {
+    id: 9,
+    type: 'invisible_ink',
+    prompt: "✧ Hidden in Plain Sight ✧",
+    subtext: "Some things are only seen when you look for them. Try highlighting the empty space.",
+    hiddenText: "The moments we share are written in invisible ink on my heart. REVEAL",
+    code: "REVEAL",
+    hint: "Click and drag to highlight the whitespace below...",
+    successMessage: "You found what was always there ♡"
+  },
+
+  // ──────────────────────────────────────────
+  // STAGE 10: The "Love Wordle"
+  // ──────────────────────────────────────────
+  {
+    id: 10,
+    type: 'love_wordle',
+    prompt: "✧ Our Word Game ✧",
+    subtext: "Guess the 5-letter word in 6 tries. It's something special to us.",
+    answer: "SMILE",
+    hint: "Something I always want to see on your face...",
+    successMessage: "You guessed it! That's what you give me every day ♡"
+  },
+
+  // ──────────────────────────────────────────
+  // STAGE 11: The "Fake 404" Page
+  // ──────────────────────────────────────────
+  {
+    id: 11,
+    type: 'fake_404',
+    prompt: "Error 404: Life not found without you.",
+    subtext: "Return to [Home] or enter code [FOREVER] to proceed.",
+    answer: "FOREVER",
+    inputPlaceholder: "Enter code...",
+    hint: "The answer is literally in the error message...",
+    successMessage: "Forever and always ♡"
+  },
+
+  // ──────────────────────────────────────────
+  // STAGE 12: The "Captcha" of Us
+  // ──────────────────────────────────────────
+  {
+    id: 12,
+    type: 'captcha_puzzle',
+    prompt: "✧ Verify You're My Girlfriend ✧",
+    subtext: "Select all images where we are holding hands.",
+    images: [
+      { url: '/anniversary/captcha/img1.jpg', isCorrect: true },
+      { url: '/anniversary/captcha/img2.jpg', isCorrect: false },
+      { url: '/anniversary/captcha/img3.jpg', isCorrect: true },
+      { url: '/anniversary/captcha/img4.jpg', isCorrect: false },
+      { url: '/anniversary/captcha/img5.jpg', isCorrect: true },
+      { url: '/anniversary/captcha/img6.jpg', isCorrect: false },
+      { url: '/anniversary/captcha/img7.jpg', isCorrect: true },
+      { url: '/anniversary/captcha/img8.jpg', isCorrect: false },
+      { url: '/anniversary/captcha/img9.jpg', isCorrect: false },
+    ],
+    hint: "Look closely at each photo...",
+    successMessage: "Identity verified: You're the one ♡"
+  },
+
+  // ──────────────────────────────────────────
+  // STAGE 13: Date Gate (Anniversary Lock)
+  // ──────────────────────────────────────────
+  {
+    id: 13,
     type: 'date_gate',
     unlockDate: '2026-01-28',
     lockedTitle: "✧ A Special Surprise Awaits ✧",
@@ -189,10 +291,10 @@ export const huntStages = [
   },
 
   // ──────────────────────────────────────────
-  // STAGE 8: Final Video Reveal
+  // STAGE 14: Final Video Reveal
   // ──────────────────────────────────────────
   {
-    id: 8,
+    id: 14,
     type: 'video_reveal',
     title: "✧ For You, With Love ✧",
     subtitle: "A message from my heart to yours...",

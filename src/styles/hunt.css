@@ -878,3 +878,429 @@ z-index: 50;
   }
 }
 
+/* ============================================
+   RESPONSIVE SQUEEZE PUZZLE STYLES
+   ============================================ */
+.responsive-squeeze-puzzle {
+  width: 100%;
+  max-width: 42rem;
+  padding: 0 1rem;
+}
+
+.squeeze-status {
+  margin-top: 2rem;
+  text-align: center;
+  padding: 1.5rem;
+  background: var(--hunt-primary-faint);
+  border-radius: 0.5rem;
+}
+
+.squeeze-status p {
+  font-size: 0.9rem;
+  color: var(--hunt-primary);
+  margin-bottom: 0.5rem;
+}
+
+#current-width {
+  font-weight: 600;
+  color: var(--hunt-accent);
+  font-size: 1.1rem;
+}
+
+.squeeze-hint {
+  font-size: 0.8rem !important;
+  color: var(--hunt-primary-dim) !important;
+  margin-top: 0.5rem !important;
+}
+
+.squeeze-reveal {
+  margin-top: 2rem;
+  text-align: center;
+}
+
+.reveal-code {
+  padding: 2rem;
+  background: var(--hunt-primary-faint);
+  border-radius: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.reveal-label {
+  font-size: 0.8rem;
+  color: var(--hunt-primary-dim);
+  margin-bottom: 0.5rem;
+}
+
+.reveal-value {
+  font-size: 1.5rem;
+  color: var(--hunt-accent);
+  font-weight: 600;
+  letter-spacing: 0.2em;
+}
+
+/* ============================================
+   EMOJI PUZZLE STYLES
+   ============================================ */
+.emoji-puzzle {
+  width: 100%;
+  max-width: 42rem;
+  padding: 0 1rem;
+}
+
+.emoji-puzzles-container {
+  margin: 2rem 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.emoji-puzzle-item {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1.25rem;
+  background: var(--hunt-surface);
+  border: 1px solid var(--hunt-border);
+  border-radius: 0.75rem;
+  transition: all 0.3s ease;
+}
+
+.emoji-puzzle-item.correct {
+  border-color: #7ece8a;
+  background: rgba(126, 206, 138, 0.1);
+}
+
+.emoji-puzzle-item.incorrect {
+  border-color: var(--hunt-danger);
+  background: rgba(224, 122, 122, 0.1);
+  animation: shake 0.3s ease;
+}
+
+.emoji-sequence {
+  font-size: 1.5rem;
+  min-width: 120px;
+  text-align: center;
+}
+
+.emoji-equals {
+  font-size: 1.25rem;
+  color: var(--hunt-primary-dim);
+}
+
+.emoji-input {
+  flex: 1;
+  padding: 0.75rem;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid var(--hunt-border);
+  border-radius: 0.5rem;
+  color: var(--hunt-primary);
+  font-family: inherit;
+  font-size: 0.9rem;
+}
+
+.emoji-check {
+  font-size: 1.5rem;
+  color: #7ece8a;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.emoji-puzzle-item.correct .emoji-check {
+  opacity: 1;
+}
+
+#emoji-submit {
+  width: 100%;
+  margin-top: 1rem;
+}
+
+/* ============================================
+   INVISIBLE INK PUZZLE STYLES
+   ============================================ */
+.invisible-ink-puzzle {
+  width: 100%;
+  max-width: 42rem;
+  padding: 0 1rem;
+}
+
+.invisible-text-container {
+  margin: 2rem 0;
+  padding: 2rem;
+  background: var(--hunt-surface);
+  border: 1px solid var(--hunt-border);
+  border-radius: 0.75rem;
+  min-height: 150px;
+  cursor: text;
+  user-select: text;
+}
+
+.invisible-text {
+  color: transparent;
+  font-size: 1rem;
+  line-height: 1.8;
+  text-shadow: none;
+  transition: all 0.5s ease;
+  user-select: text;
+}
+
+.invisible-text::selection {
+  background: var(--hunt-primary);
+  color: var(--hunt-bg);
+}
+
+.invisible-text.revealed {
+  color: var(--hunt-primary);
+  text-shadow: 0 0 10px var(--hunt-glow);
+}
+
+/* ============================================
+   LOVE WORDLE PUZZLE STYLES
+   ============================================ */
+.love-wordle-puzzle {
+  width: 100%;
+  max-width: 42rem;
+  padding: 0 1rem;
+}
+
+.wordle-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin: 2rem 0;
+  align-items: center;
+}
+
+.wordle-row {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.wordle-cell {
+  width: 3.5rem;
+  height: 3.5rem;
+  border: 2px solid var(--hunt-border);
+  border-radius: 0.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--hunt-primary);
+  text-transform: uppercase;
+  transition: all 0.3s ease;
+}
+
+.wordle-cell.correct {
+  background: #7ece8a;
+  border-color: #7ece8a;
+  color: var(--hunt-bg);
+}
+
+.wordle-cell.present {
+  background: #e0c068;
+  border-color: #e0c068;
+  color: var(--hunt-bg);
+}
+
+.wordle-cell.absent {
+  background: rgba(100, 100, 100, 0.3);
+  border-color: rgba(100, 100, 100, 0.3);
+  color: rgba(255, 255, 255, 0.3);
+}
+
+.wordle-keyboard {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.375rem;
+  justify-content: center;
+  margin: 1.5rem 0;
+  max-width: 500px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.wordle-key {
+  padding: 0.75rem 0.5rem;
+  min-width: 2.5rem;
+  background: var(--hunt-surface);
+  border: 1px solid var(--hunt-border);
+  border-radius: 0.25rem;
+  color: var(--hunt-primary);
+  font-family: inherit;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-transform: uppercase;
+}
+
+.wordle-key:hover {
+  background: var(--hunt-primary-faint);
+  transform: scale(1.05);
+}
+
+.wordle-key-enter,
+.wordle-key-back {
+  min-width: 4rem;
+  font-size: 0.65rem;
+}
+
+.wordle-status {
+  text-align: center;
+  margin-top: 1rem;
+  font-size: 0.9rem;
+  color: var(--hunt-accent);
+  min-height: 1.5rem;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+/* ============================================
+   FAKE 404 PUZZLE STYLES
+   ============================================ */
+.fake-404-puzzle {
+  width: 100%;
+  max-width: 42rem;
+  padding: 0 1rem;
+  min-height: 60vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.error-404-container {
+  text-align: center;
+  width: 100%;
+}
+
+.error-code {
+  font-size: 8rem;
+  font-weight: 700;
+  color: var(--hunt-primary);
+  line-height: 1;
+  margin-bottom: 1rem;
+  text-shadow: 0 0 40px var(--hunt-glow);
+  opacity: 0.9;
+}
+
+.error-title {
+  font-size: 1.5rem;
+  color: var(--hunt-accent);
+  margin-bottom: 1rem;
+  line-height: 1.4;
+}
+
+.error-subtext {
+  font-size: 1rem;
+  color: var(--hunt-primary-dim);
+  margin-bottom: 2rem;
+  line-height: 1.6;
+}
+
+/* ============================================
+   CAPTCHA PUZZLE STYLES
+   ============================================ */
+.captcha-puzzle {
+  width: 100%;
+  max-width: 42rem;
+  padding: 0 1rem;
+}
+
+.captcha-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.75rem;
+  margin: 2rem 0;
+}
+
+.captcha-image-container {
+  position: relative;
+  aspect-ratio: 1;
+  border-radius: 0.5rem;
+  overflow: hidden;
+  cursor: pointer;
+  border: 2px solid var(--hunt-border);
+  transition: all 0.3s ease;
+}
+
+.captcha-image-container:hover {
+  border-color: var(--hunt-primary);
+  transform: scale(1.02);
+}
+
+.captcha-image-container.selected {
+  border-color: var(--hunt-accent);
+  box-shadow: 0 0 20px var(--hunt-glow);
+}
+
+.captcha-image-container img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.captcha-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(212, 165, 217, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.captcha-image-container.selected .captcha-overlay {
+  opacity: 1;
+}
+
+.captcha-checkmark {
+  width: 3rem;
+  height: 3rem;
+  background: var(--hunt-accent);
+  color: var(--hunt-bg);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  font-weight: 700;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
+}
+
+#captcha-submit {
+  width: 100%;
+  margin-top: 1rem;
+}
+
+/* Responsive adjustments for new puzzles */
+@media (max-width: 640px) {
+  .emoji-puzzle-item {
+    flex-direction: column;
+    text-align: center;
+  }
+
+  .emoji-sequence {
+    min-width: auto;
+  }
+
+  .wordle-cell {
+    width: 2.5rem;
+    height: 2.5rem;
+    font-size: 1.1rem;
+  }
+
+  .wordle-key {
+    min-width: 2rem;
+    padding: 0.6rem 0.4rem;
+  }
+
+  .error-code {
+    font-size: 5rem;
+  }
+
+  .captcha-grid {
+    gap: 0.5rem;
+  }
+}
+
