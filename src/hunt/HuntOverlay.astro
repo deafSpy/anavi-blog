@@ -314,51 +314,34 @@ const { musicFiles = [] } = Astro.props;
     color: var(--hunt-danger, #e07a7a);
   }
 
-  /* Stage Container - Slider Wrapper */
+  /* Stage Container - Viewport for the carousel */
   .stage-container {
-    width: 100%;
-    min-height: calc(100vh - 6rem);
+    width: 100vw;
+    height: calc(100vh - 4rem);
     position: relative;
     overflow: hidden;
-    padding: 1rem 0;
   }
 
-  /* Stage Slider - Horizontal Carousel */
+  /* Stage Slider - Horizontal track that moves */
   .stage-slider {
     display: flex;
     flex-direction: row;
-    flex-wrap: nowrap;
-    width: max-content;
-    min-width: 100%;
     height: 100%;
-    transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
-    will-change: transform;
+    transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
-  /* Individual Stage Slide */
+  /* Individual Stage Slide - Each takes full viewport width */
   .stage-slide {
     flex: 0 0 100vw;
     width: 100vw;
-    max-width: 100vw;
-    min-height: calc(100vh - 6rem);
+    height: 100%;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: flex-start;
-    padding: 0 1rem;
-    opacity: 0;
-    visibility: hidden;
-    transition: opacity 0.4s ease, visibility 0.4s ease;
+    padding: 2rem;
     box-sizing: border-box;
-  }
-
-  .stage-slide.active {
-    opacity: 1;
-    visibility: visible;
-  }
-
-  .stage-slide.preload {
-    opacity: 0;
+    overflow-y: auto;
   }
 
   /* Success Overlay */
@@ -944,19 +927,13 @@ const { musicFiles = [] } = Astro.props;
     currentStageIndex = index;
     stagePhase = solvedStages.has(index) ? 'memory' : 'puzzle';
     
-    // Render the new stage if not already cached
+    // Render the new stage if not already cached (going forward)
     if (!slideCache.has(index)) {
       renderStageToSlide(index);
     }
     
-    // Preload adjacent stages for smooth navigation
-    preloadAdjacentStages(index);
-    
     // Animate the slide transition
     await slideToStage(previousIndex, index, direction);
-    
-    // Clean up old slides (keep current + adjacent)
-    cleanupDistantSlides(index);
     
     updateProgress();
     updateNavigation();
@@ -1057,72 +1034,40 @@ const { musicFiles = [] } = Astro.props;
   }
   
   /**
-   * Animate sliding to a specific stage
+   * Animate sliding to a specific stage using CSS transform
    */
   async function slideToStage(fromIndex: number, toIndex: number, direction: 'next' | 'prev'): Promise<void> {
     if (!stageSlider) return;
     
-    const fromSlide = slideCache.get(fromIndex);
     const toSlide = slideCache.get(toIndex);
-    
     if (!toSlide) return;
     
-    // Mark active slide
-    slideCache.forEach((slide, index) => {
-      slide.classList.remove('active');
-      if (index === toIndex) {
-        slide.classList.add('active');
-      }
-    });
+    // Calculate the position to slide to (each slide is 100vw)
+    // We need to find the actual DOM position of the target slide
+    const slides = Array.from(stageSlider.children) as HTMLElement[];
+    const targetSlideIndex = slides.indexOf(toSlide);
     
-    // Calculate slide positions
-    const slideWidth = stageContainer?.offsetWidth || window.innerWidth;
-    const offset = -toIndex * slideWidth;
+    if (targetSlideIndex === -1) return;
     
-    // Animate slider
-    return new Promise((resolve) => {
-      gsap.to(stageSlider, {
-        x: offset,
-        duration: 0.6,
-        ease: 'power2.inOut',
-        onComplete: () => {
-          // Reset bypass progress after transition
-          resetBypassProgress();
-          
-          // Update image trail
-          const isStageSolved = solvedStages.has(toIndex);
-          const stage = huntStages[toIndex];
-          if (isStageSolved && stage.type === 'puzzle') {
-            startTrail();
-          } else {
-            stopTrail();
-          }
-          
-          resolve();
-        }
-      });
-      
-      // Fade out previous slide
-      if (fromSlide) {
-        gsap.to(fromSlide, {
-          opacity: 0.3,
-          duration: 0.3,
-          onComplete: () => {
-            gsap.set(fromSlide, { opacity: 0 });
-          }
-        });
-      }
-      
-      // Fade in new slide
-      gsap.fromTo(toSlide, 
-        { opacity: 0 },
-        { opacity: 1, duration: 0.4, delay: 0.2 }
-      );
-    });
+    // Slide the track to show the target slide
+    const offset = targetSlideIndex * 100;
+    stageSlider.style.transform = `translateX(-${offset}vw)`;
+    
+    // Reset bypass progress after transition
+    resetBypassProgress();
+    
+    // Update image trail
+    const isStageSolved = solvedStages.has(toIndex);
+    const stage = huntStages[toIndex];
+    if (isStageSolved && stage.type === 'puzzle') {
+      startTrail();
+    } else {
+      stopTrail();
+    }
   }
   
   /**
-   * Initial render - sets up the slider with current stage
+   * Initial render - sets up the slider with all stages up to current
    */
   function renderCurrentStage() {
     if (!stageSlider) return;
@@ -1137,15 +1082,15 @@ const { musicFiles = [] } = Astro.props;
       lenisInstance = null;
     }
     
-    // Render current stage
-    const currentSlide = renderStageToSlide(currentStageIndex);
-    if (currentSlide) {
-      currentSlide.classList.add('active');
-      gsap.set(currentSlide, { opacity: 1 });
+    // Render all stages from 0 to current (for carousel to work)
+    // Each solved stage + the current unsolved one
+    for (let i = 0; i <= currentStageIndex; i++) {
+      renderStageToSlide(i);
     }
     
-    // Preload adjacent stages
-    preloadAdjacentStages(currentStageIndex);
+    // Set initial carousel position to show current stage
+    const offset = currentStageIndex * 100;
+    stageSlider.style.transform = `translateX(-${offset}vw)`;
     
     // Check if current stage is solved (for image trail)
     const isStageSolved = solvedStages.has(currentStageIndex);
